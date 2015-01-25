@@ -57,6 +57,10 @@ on the state of the load.
 instead of the `<img>` itself.
 
 
+## Author
+
+Huafu Gandon [huafu_g](https://twitter.com/huafu_g)
+
 ---
 
 For more information on using ember-cli, visit [http://www.ember-cli.com/](http://www.ember-cli.com/).
