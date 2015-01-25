@@ -22,6 +22,19 @@ function callQueueItem(item) {
   }
 }
 
+function anyDefined() {
+  var props = Array.prototype.slice.call(arguments);
+  return Ember.computed.apply(Ember, props.concat([function () {
+    var val;
+    for (var i = 0; i < props.length; i++) {
+      val = this.get(props[i]);
+      if (val != null) {
+        return val;
+      }
+    }
+  }])).readOnly();
+}
+
 /**
  * @module img-manager
  * @class ImgRule
@@ -67,28 +80,28 @@ export default Ember.Object.extend({
    * @property delay
    * @type {number}
    */
-  delay: Ember.computed.any('config.delay', 'manager.defaultDelay'),
+  delay: anyDefined('config.delay', 'manager.defaultDelay'),
 
   /**
    * The maximum number of time to try to load an image
    * @property maxTries
    * @type {number}
    */
-  maxTries: Ember.computed.any('config.maxTries', 'manager.defaultMaxTries'),
+  maxTries: anyDefined('config.maxTries', 'manager.defaultMaxTries'),
 
   /**
    * The src to use when loading the image
    * @property loadingSrc
    * @type {string}
    */
-  loadingSrc: Ember.computed.any('config.loadingSrc', 'manager.defaultLoadingSrc'),
+  loadingSrc: anyDefined('config.loadingSrc', 'manager.defaultLoadingSrc'),
 
   /**
    * The src to use when the image failed loading
    * @property errorSrc
    * @type {string}
    */
-  errorSrc: Ember.computed.any('config.errorSrc', 'manager.defaultErrorSrc'),
+  errorSrc: anyDefined('config.errorSrc', 'manager.defaultErrorSrc'),
 
   /**
    * How many times has it been paused

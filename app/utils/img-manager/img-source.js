@@ -48,6 +48,14 @@ export default Ember.Object.extend(Ember.Evented, {
   manager: null,
 
   /**
+   * Percent loaded
+   * @property progress
+   * @type {number}
+   */
+  progress: null,
+
+
+  /**
    * Our matching rule
    * @property rule
    * @type {ImgRule}
@@ -86,13 +94,17 @@ export default Ember.Object.extend(Ember.Evented, {
    * @type {HTMLImageElement}
    */
   node: Ember.computed('src', function () {
-    var node, opt = this.getProperties('src', '_onLoadHandler', '_onErrorHandler', 'maxTries');
+    var node, opt = this.getProperties(
+      'src', '_onLoadHandler', '_onErrorHandler', '_onProgressHandler', 'maxTries'
+    );
     this.trigger('willLoad');
     if (opt.maxTries) {
       this.set('isLoading', true);
+      this.set('progress', undefined);
       node = document.createElement('img');
       helpers.attachOnce(node, 'load', opt._onLoadHandler);
       helpers.attachOnce(node, 'error', opt._onErrorHandler);
+      helpers.attachOnce(node, 'progress', opt._onProgressHandler);
       if (this.get('errorCount')) {
         node.src = appendDummyQP(opt.src);
       }
@@ -199,6 +211,21 @@ export default Ember.Object.extend(Ember.Evented, {
 
 
   /**
+   * The progress event handler
+   * @property _onProgressHandler
+   * @type Function
+   * @private
+   */
+  _onProgressHandler: Ember.computed(function () {
+    return Ember.run.bind(this, function (event) {
+      if (event.lengthComputable) {
+        this.set('progress', event.loaded / event.total * 100);
+      }
+    });
+  }).readOnly(),
+
+
+  /**
    * The load event handler
    * @property _onLoadHandler
    * @type Function
@@ -206,11 +233,13 @@ export default Ember.Object.extend(Ember.Evented, {
    */
   _onLoadHandler: Ember.computed(function () {
     return Ember.run.bind(this, function (event) {
-      var opt = this.getProperties('node', '_onErrorHandler');
+      var opt = this.getProperties('node', '_onErrorHandler', '_onProgressHandler');
       helpers.detach(opt.node, 'error', opt._onErrorHandler);
+      helpers.detach(opt.node, 'progress', opt._onProgressHandler);
       this.setProperties({
         isError:   false,
-        isLoading: false
+        isLoading: false,
+        progress:  100
       });
       this.trigger('didLoad', event);
       this.trigger('ready', event);
@@ -225,8 +254,9 @@ export default Ember.Object.extend(Ember.Evented, {
    */
   _onErrorHandler: Ember.computed(function () {
     return Ember.run.bind(this, function (event) {
-      var opt = this.getProperties('node', '_onLoadHandler', 'maxTries', 'rule');
+      var opt = this.getProperties('node', '_onLoadHandler', '_onProgressHandler', 'maxTries', 'rule');
       helpers.detach(opt.node, 'load', opt._onLoadHandler);
+      helpers.detach(opt.node, 'progress', opt._onProgressHandler);
       if (this.incrementProperty('errorCount') < opt.maxTries) {
         this._continueRuleProcessingQueue();
         this._scheduleLoad();
