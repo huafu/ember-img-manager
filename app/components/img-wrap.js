@@ -59,6 +59,34 @@ var ImgWrapComponent = Ember.Component.extend({
   }).readOnly(),
 
   /**
+   * Is it loading the source image?
+   * @property isLoading
+   * @type {boolean}
+   */
+  isLoading: Ember.computed.readOnly('imgSource.isLoading'),
+
+  /**
+   * Did the source image fail to load?
+   * @property isError
+   * @type {boolean}
+   */
+  isError: Ember.computed.readOnly('imgSource.isError'),
+
+  /**
+   * Did the source image succeed to load?
+   * @property isSuccess
+   * @type {boolean}
+   */
+  isSuccess: Ember.computed.readOnly('imgSource.isSuccess'),
+
+  /**
+   * How many percent have been loaded so far?
+   * @property progress
+   * @type {number}
+   */
+  progress: Ember.computed.readOnly('imgSource.progress'),
+
+  /**
    * Loading class
    * @property loadingClass
    * @type {string}
@@ -123,10 +151,10 @@ var ImgWrapComponent = Ember.Component.extend({
    */
   _sendStatusAction: Ember.observer('imgSource.isError', 'imgSource.isSuccess', function () {
     if (this.get('imgSource.isError')) {
-      this.sendAction('error');
+      this.sendAction('load-error');
     }
     else if (this.get('imgSource.isSuccess')) {
-      this.sendAction('success');
+      this.sendAction('load-success');
     }
   }),
 

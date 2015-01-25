@@ -17,7 +17,7 @@ for example if you are used to work disconnected from internet.
 ```js
 // config/environment.js
 
-// all options are optionals
+// all settings are optionals
 ENV.imgManager = {
   // how many times to retry an image load (default: 1)
   maxTries: 3,
@@ -35,7 +35,14 @@ ENV.imgManager = {
     {match: 'www.google.com/m8/feeds/photos', delay: 1000, batchSize: 10},
     // do not try to load any external image (for dev env for example):
     {match: /^https?:\/\//, maxTries: 0}
-  ]
+  ],
+  // ------ global only settings (show with their default values) -----
+  // css class to use when loading an image
+  loadingClass: 'loading',
+  // css class to use when the load was successful
+  successClass: 'success',
+  // css class to use when the load has failed
+  errorClass: 'error'
 };
 ```
 
@@ -49,6 +56,20 @@ ENV.imgManager = {
 
 * Simply replace any `<img ...>` tag that you want to be handled by the manager with the equivalent
 `{{img-wrap ...}}` handlebars tag. All HTML attributes are supported.
+
+    ```handlebars
+    {{!-- old tag was <img {{bind-attr src=photoUrl}} alt="Landscape"> --}}
+    {{img-wrap src=photoUrl alt="Landscape"}}
+    ```
+
+    There are a few properties you can use:
+    - `loadingClass`, `successClass`, `errorClass`: the css classes to use for each status (using
+    the default ones from config if they are not set)
+    - `isLoading`, `isSuccess`, `isError`: whether the image is in one of those status
+    - `progress`: the value representing the percentage of the image which has been loaded already
+    - `load-error`: name of an Ember action to trigger when the image fails to load
+    - `load-success`: name of an Ember action to trigger when the image loads successfully
+
 * One thing to note is that the `<img>` is then wrapped inside a `<span>` which has `display: inline-block`.
 It should not break your design in most of the cases.
 * This `<span>` tag has then a `img-wrap` class, plus a `loading`, `error` or `success` class depending
