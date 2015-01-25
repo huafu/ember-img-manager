@@ -23,7 +23,12 @@ export default Ember.Object.extend({
    * @type {Object}
    */
   config: Ember.computed(function () {
-    return Ember.get(ENV, 'imgManager') || {};
+    return Ember.merge({
+      maxTries: 1,
+      loadingClass: 'loading',
+      errorClass: 'error',
+      successClass: 'success'
+    }, Ember.get(ENV, 'imgManager'));
   }).readOnly(),
 
   /**
@@ -45,9 +50,7 @@ export default Ember.Object.extend({
    * @property defaultMaxTries
    * @type {number}
    */
-  defaultMaxTries: Ember.computed(function(){
-    return this.getWithDefault('config.maxTries', 1);
-  }).readOnly(),
+  defaultMaxTries: Ember.computed.readOnly('config.maxTries', 1),
 
   /**
    * The default loading src
@@ -62,6 +65,27 @@ export default Ember.Object.extend({
    * @type {number}
    */
   defaultErrorSrc: Ember.computed.readOnly('config.errorSrc'),
+
+  /**
+   * Default css class for the wrapper of a loading image
+   * @property defaultLoadingClass
+   * @type {string}
+   */
+  defaultLoadingClass: Ember.computed.readOnly('config.loadingClass'),
+
+  /**
+   * Default css class for the wrapper of an image which failed to load
+   * @property defaultErrorClass
+   * @type {string}
+   */
+  defaultErrorClass: Ember.computed.readOnly('config.errorClass'),
+
+  /**
+   * Default css class for the wrapper of an image which loaded successfully
+   * @property defaultSuccessClass
+   * @type {string}
+   */
+  defaultSuccessClass: Ember.computed.readOnly('config.successClass'),
 
 
   /**

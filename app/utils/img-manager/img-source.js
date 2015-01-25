@@ -71,6 +71,14 @@ export default Ember.Object.extend(Ember.Evented, {
    */
   isError: false,
 
+  /**
+   * Whether we are loaded successfully or not
+   * @property isSuccess
+   * @type {boolean}
+   */
+  isSuccess: Ember.computed('isLoading', 'isError', function () {
+    return !this.get('isLoading') && !this.get('isError');
+  }).readOnly(),
 
   /**
    * Our source node

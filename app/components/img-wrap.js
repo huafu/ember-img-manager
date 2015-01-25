@@ -31,7 +31,7 @@ var ImgWrapComponent = Ember.Component.extend({
   /**
    * @inheritDoc
    */
-  classNameBindings: ['imgSource.isLoading:loading', 'imgSource.isError:error'],
+  classNameBindings: ['statusClass'],
 
   /**
    * The css styles of our span
@@ -59,6 +59,49 @@ var ImgWrapComponent = Ember.Component.extend({
   }).readOnly(),
 
   /**
+   * Loading class
+   * @property loadingClass
+   * @type {string}
+   */
+  loadingClass: Ember.computed.oneWay('manager.defaultLoadingClass'),
+
+  /**
+   * Error class
+   * @property errorClass
+   * @type {string}
+   */
+  errorClass: Ember.computed.oneWay('manager.defaultErrorClass'),
+
+  /**
+   * Success class
+   * @property successClass
+   * @type {string}
+   */
+  successClass: Ember.computed.oneWay('manager.defaultSuccessClass'),
+
+  /**
+   * The css class related to the current status
+   * @property statusClass
+   * @type {string}
+   */
+  statusClass: Ember.computed(
+    'imgSource.isLoading', 'imgSource.isError', 'imgSource.isSuccess',
+    'loadingClass', 'errorClass', 'successClass',
+    function () {
+      var opt = this.get('imgSource').getProperties('isLoading', 'isError', 'isSuccess');
+      if (opt.isLoading) {
+        return this.get('loadingClass');
+      }
+      else if (opt.isError) {
+        return this.get('errorClass');
+      }
+      else if (opt.isSuccess) {
+        return this.get('successClass');
+      }
+    }).readOnly(),
+
+
+  /**
    * Insert our clone in the DOM
    *
    * @method _insertClone
@@ -71,6 +114,21 @@ var ImgWrapComponent = Ember.Component.extend({
       this.get('element').appendChild(clone);
     }
   }).on('didInsertElement'),
+
+  /**
+   * Sends the correct event related to the current status
+   *
+   * @method _sendStatusAction
+   * @private
+   */
+  _sendStatusAction: Ember.observer('imgSource.isError', 'imgSource.isSuccess', function () {
+    if (this.get('imgSource.isError')) {
+      this.sendAction('error');
+    }
+    else if (this.get('imgSource.isSuccess')) {
+      this.sendAction('success');
+    }
+  }),
 
   /**
    * Release the clone used if any
