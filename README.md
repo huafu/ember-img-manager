@@ -19,12 +19,12 @@ for example if you are used to work disconnected from internet.
 
 // all settings are optionals
 ENV.imgManager = {
-  // how many times to retry an image load (default: 1)
+  // how many times to try to load an image (default: 1)
   maxTries: 3,
   // wait 10 milliseconds before trying to load more images (default: 1)
   delay: 10,
   // how many images to try to load in a raw (if 0 then it'll load all at once) (default: 0)
-  batch: 0,
+  batchSize: 0,
   // the image to use while loading the real image (default: null)
   loadingSrc: 'assets/loading-img.png',
   // the image to use when an image has failed to load (default: null)
