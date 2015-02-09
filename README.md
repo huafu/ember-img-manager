@@ -1,6 +1,6 @@
 # ember-img-manager
 
-This Ember addon lets you controller how images are loaded (batch size, delay, ...),
+This Ember addon lets you control how images are loaded (batch size, delay, ...),
 setup events for success or error, re-use DOM `img` nodes by cloning them so that
 external images with no cache are cached, and use different image sources while an
 image is loading or becomes error.
@@ -19,12 +19,12 @@ for example if you are used to work disconnected from internet.
 
 // all settings are optionals
 ENV.imgManager = {
-  // how many times to retry an image load (default: 1)
+  // how many times to try to load an image (default: 1)
   maxTries: 3,
   // wait 10 milliseconds before trying to load more images (default: 1)
   delay: 10,
   // how many images to try to load in a raw (if 0 then it'll load all at once) (default: 0)
-  batch: 0,
+  batchSize: 0,
   // the image to use while loading the real image (default: null)
   loadingSrc: 'assets/loading-img.png',
   // the image to use when an image has failed to load (default: null)
