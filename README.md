@@ -11,6 +11,9 @@ example, where Google limits each client to 10 requests per second for contact i
 You can also use this addon to avoid loading any external images on `dev` environment
 for example if you are used to work disconnected from internet.
 
+By default images are lazy loaded, which means that if they have not yet been loaded,
+the load will trigger only when the image will appear in the viewport.
+
 
 ## Example configuration
 
@@ -25,6 +28,8 @@ ENV.imgManager = {
   delay: 10,
   // how many images to try to load in a raw (if 0 then it'll load all at once) (default: 0)
   batchSize: 0,
+  // should we start loading a source image only when it appear in the viewport (default: true)
+  lazyLoad: false,
   // the image to use while loading the real image (default: null)
   loadingSrc: 'assets/loading-img.png',
   // the image to use when an image has failed to load (default: null)
@@ -69,6 +74,7 @@ ENV.imgManager = {
     - `progress`: the value representing the percentage of the image which has been loaded already
     - `load-error`: name of an Ember action to trigger when the image fails to load
     - `load-success`: name of an Ember action to trigger when the image loads successfully
+    - `lazyLoad`: whether to directly load the image or wait until it appears in the viewport (will override anything set in the rules)
 
 * One thing to note is that the `<img>` is then wrapped inside a `<span>` which has `display: inline-block`.
 It should not break your design in most of the cases.
@@ -80,7 +86,7 @@ instead of the `<img>` itself.
 
 ## Author
 
-Huafu Gandon [huafu_g](https://twitter.com/huafu_g)
+Huafu Gandon [@huafu_g](https://twitter.com/huafu_g) - [my website](http://huafu.github.io)
 
 ---
 

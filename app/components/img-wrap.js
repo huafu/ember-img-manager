@@ -1,4 +1,5 @@
 import Ember from 'ember';
+import ImgManagerInViewportMixin from '../mixins/img-manager/in-viewport';
 
 var IMG_ATTRIBUTES = [
   'id', 'title', 'align', 'alt', 'border', 'height',
@@ -6,13 +7,17 @@ var IMG_ATTRIBUTES = [
   'usemap', 'vspace'
 ];
 
+var computed = Ember.computed;
+var readOnly = computed.readOnly;
+var oneWay = computed.oneWay;
+
 /**
  * @class ImgWrapComponent
  * @extends Ember.Component
  *
  * @property {ImgManagerService} manager
  */
-var ImgWrapComponent = Ember.Component.extend({
+var ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
   /**
    * @inheritDoc
    */
@@ -53,7 +58,7 @@ var ImgWrapComponent = Ember.Component.extend({
    * @property imgSource
    * @type {ImgSource}
    */
-  imgSource: Ember.computed('src', function () {
+  imgSource: computed('src', function () {
     var opt = this.getProperties('manager', 'src');
     return opt.src ? opt.manager.imgSourceForSrc(opt.src) : null;
   }).readOnly(),
@@ -63,56 +68,63 @@ var ImgWrapComponent = Ember.Component.extend({
    * @property isLoading
    * @type {boolean}
    */
-  isLoading: Ember.computed.readOnly('imgSource.isLoading'),
+  isLoading: readOnly('imgSource.isLoading'),
 
   /**
    * Did the source image fail to load?
    * @property isError
    * @type {boolean}
    */
-  isError: Ember.computed.readOnly('imgSource.isError'),
+  isError: readOnly('imgSource.isError'),
 
   /**
    * Did the source image succeed to load?
    * @property isSuccess
    * @type {boolean}
    */
-  isSuccess: Ember.computed.readOnly('imgSource.isSuccess'),
+  isSuccess: readOnly('imgSource.isSuccess'),
 
   /**
    * How many percent have been loaded so far?
    * @property progress
    * @type {number}
    */
-  progress: Ember.computed.readOnly('imgSource.progress'),
+  progress: readOnly('imgSource.progress'),
+
+  /**
+   * Lazy load
+   * @property lazyLoad
+   * @type {boolean}
+   */
+  lazyLoad: oneWay('imgSource.lazyLoad'),
 
   /**
    * Loading class
    * @property loadingClass
    * @type {string}
    */
-  loadingClass: Ember.computed.oneWay('manager.defaultLoadingClass'),
+  loadingClass: oneWay('manager.defaultLoadingClass'),
 
   /**
    * Error class
    * @property errorClass
    * @type {string}
    */
-  errorClass: Ember.computed.oneWay('manager.defaultErrorClass'),
+  errorClass: oneWay('manager.defaultErrorClass'),
 
   /**
    * Success class
    * @property successClass
    * @type {string}
    */
-  successClass: Ember.computed.oneWay('manager.defaultSuccessClass'),
+  successClass: oneWay('manager.defaultSuccessClass'),
 
   /**
    * The css class related to the current status
    * @property statusClass
    * @type {string}
    */
-  statusClass: Ember.computed(
+  statusClass: computed(
     'imgSource.isLoading', 'imgSource.isError', 'imgSource.isSuccess',
     'loadingClass', 'errorClass', 'successClass',
     function () {
@@ -140,8 +152,23 @@ var ImgWrapComponent = Ember.Component.extend({
     if (this._state === 'inDOM' && (clone = this._createClone())) {
       // the _createClone will also release the old one if any
       this.get('element').appendChild(clone);
+      if (this.get('enteredViewport')) {
+        this.get('imgSource').scheduleLoad();
+      }
     }
   }).on('didInsertElement'),
+
+  /**
+   * Observes the enteredViewport property to schedule a load
+   *
+   * @method _inViewportHandler
+   * @private
+   */
+  _inViewportHandler: Ember.observer('enteredViewport', function () {
+    if (this._currentClone && this.get('enteredViewport') && !this.get('imgSource.isReady')) {
+      this.get('imgSource').scheduleLoad();
+    }
+  }),
 
   /**
    * Sends the correct event related to the current status
@@ -173,6 +200,18 @@ var ImgWrapComponent = Ember.Component.extend({
   }),
 
   /**
+   * Initialize our component
+   *
+   * @method _setupImgWrap
+   * @private
+   */
+  _setupImgWrap: Ember.on('init', function () {
+    if (!this.get('lazyLoad')) {
+      this.set('enteredViewport', true);
+    }
+  }),
+
+  /**
    * Create a clone after releasing the possible existing one
    *
    * @method _createClone
@@ -196,7 +235,7 @@ var ImgWrapComponent = Ember.Component.extend({
 // now create the setters for each image attribute so that we can update them on each clone
 var extra = {};
 Ember.EnumerableUtils.forEach(IMG_ATTRIBUTES, function (name) {
-  extra[name] = Ember.computed(function (key, value) {
+  extra[name] = computed(function (key, value) {
     if (arguments.length > 1) {
       if (this._currentClone) {
         this.get('manager').setCloneAttribute(this._currentClone.clone, name, value);

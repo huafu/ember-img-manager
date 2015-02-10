@@ -51,7 +51,7 @@ export default Ember.Object.extend({
   /**
    * The rule's config
    * @property config
-   * @type {{match: string|RegExp|Function, batchSize: number, delay: number, maxTries: number, loadingSrc: string, errorSrc: string}}
+   * @type {{match: string|RegExp|Function, batchSize: number, delay: number, maxTries: number, loadingSrc: string, errorSrc: string, lazyLoad: boolean}}
    */
   config: null,
 
@@ -81,6 +81,13 @@ export default Ember.Object.extend({
    * @type {number}
    */
   delay: anyDefined('config.delay', 'manager.defaultDelay'),
+
+  /**
+   * Should we lazy load the image?
+   * @property lazyLoad
+   * @type {number}
+   */
+  lazyLoad: anyDefined('config.lazyLoad', 'manager.defaultLazyLoad'),
 
   /**
    * The maximum number of time to try to load an image

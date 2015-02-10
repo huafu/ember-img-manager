@@ -2,6 +2,10 @@ import Ember from 'ember';
 import helpers from './dom-helpers';
 
 var forEach = Ember.EnumerableUtils.forEach;
+var observer = Ember.observer;
+var computed = Ember.computed;
+var oneWay = computed.oneWay;
+var on = Ember.on;
 
 var uuid = 0;
 function appendDummyQP(url) {
@@ -54,13 +58,12 @@ export default Ember.Object.extend(Ember.Evented, {
    */
   progress: null,
 
-
   /**
    * Our matching rule
    * @property rule
    * @type {ImgRule}
    */
-  rule: Ember.computed('src', function () {
+  rule: computed('src', function () {
     var opt = this.getProperties('manager', 'src');
     return opt.manager.ruleForSrc(opt.src);
   }).readOnly(),
@@ -80,11 +83,18 @@ export default Ember.Object.extend(Ember.Evented, {
   isError: false,
 
   /**
+   * Are we ready? either loaded or error
+   * @property isReady
+   * @type {boolean}
+   */
+  isReady: computed.or('isError', 'isSuccess'),
+
+  /**
    * Whether we are loaded successfully or not
    * @property isSuccess
    * @type {boolean}
    */
-  isSuccess: Ember.computed('isLoading', 'isError', function () {
+  isSuccess: computed('isLoading', 'isError', function () {
     return !this.get('isLoading') && !this.get('isError');
   }).readOnly(),
 
@@ -93,41 +103,61 @@ export default Ember.Object.extend(Ember.Evented, {
    * @property node
    * @type {HTMLImageElement}
    */
-  node: Ember.computed('src', function () {
-    var node, opt = this.getProperties(
-      'src', '_onLoadHandler', '_onErrorHandler', '_onProgressHandler', 'maxTries'
-    );
-    this.trigger('willLoad');
-    if (opt.maxTries) {
-      this.set('isLoading', true);
-      this.set('progress', undefined);
-      node = document.createElement('img');
-      helpers.attachOnce(node, 'load', opt._onLoadHandler);
-      helpers.attachOnce(node, 'error', opt._onErrorHandler);
-      helpers.attachOnce(node, 'progress', opt._onProgressHandler);
-      if (this.get('errorCount')) {
-        node.src = appendDummyQP(opt.src);
+  node: computed('src', function () {
+    this._loading = false;
+    return document.createElement('img');
+  }).readOnly(),
+
+  /**
+   * Loads the image
+   *
+   * @method load
+   */
+  load: function () {
+    var node, opt;
+    if (!this._loading) {
+      this._loading = true;
+      opt = this.getProperties(
+        'src', '_onLoadHandler', '_onErrorHandler', '_onProgressHandler', 'maxTries'
+      );
+      node = this.get('node');
+      this.trigger('willLoad');
+      if (opt.maxTries) {
+        this.set('isLoading', true);
+        this.set('progress', undefined);
+        helpers.attachOnce(node, 'load', opt._onLoadHandler);
+        helpers.attachOnce(node, 'error', opt._onErrorHandler);
+        helpers.attachOnce(node, 'progress', opt._onProgressHandler);
+        if (this.get('errorCount')) {
+          node.src = appendDummyQP(opt.src);
+        }
+        else {
+          node.src = opt.src;
+        }
       }
       else {
-        node.src = opt.src;
+        // do not even try to load the image, and directly fires the ready event
+        Ember.run.next(this, function () {
+          this.setProperties({isError: true, isLoading: false});
+          this.trigger('ready');
+        });
       }
     }
-    else {
-      // do not even try to load the image, and directly fires the ready event
-      Ember.run.next(this, function () {
-        this.setProperties({isError: true, isLoading: false});
-        this.trigger('ready');
-      });
-    }
-    return node;
-  }).readOnly(),
+  },
 
   /**
    * Maximum number of load tries
    * @property maxTries
    * @type {number}
    */
-  maxTries: Ember.computed.oneWay('rule.maxTries'),
+  maxTries: oneWay('rule.maxTries'),
+
+  /**
+   * Should we lazy load the image?
+   * @property lazyLoad
+   * @type {number}
+   */
+  lazyLoad: oneWay('rule.lazyLoad'),
 
   /**
    * Number of errors when trying to load the image
@@ -136,13 +166,12 @@ export default Ember.Object.extend(Ember.Evented, {
    */
   errorCount: 0,
 
-
   /**
    * Our virtual src depending on our state
    * @property virtualSrc
    * @type {string}
    */
-  virtualSrc: Ember.computed('isLoading', 'isError', 'rule.errorSrc', 'rule.loadingSrc', function () {
+  virtualSrc: computed('isLoading', 'isError', 'rule.errorSrc', 'rule.loadingSrc', function () {
     var opt = this.getProperties('isLoading', 'isError');
     if (opt.isLoading) {
       return this.get('rule.loadingSrc');
@@ -162,7 +191,7 @@ export default Ember.Object.extend(Ember.Evented, {
    * @property clones
    * @type {Array.<HTMLImageElement>}
    */
-  clones: Ember.computed(function () {
+  clones: computed(function () {
     return [];
   }).readOnly(),
 
@@ -199,7 +228,7 @@ export default Ember.Object.extend(Ember.Evented, {
    *
    * @method switchClonesSrc
    */
-  switchClonesSrc: Ember.observer('virtualSrc', function () {
+  switchClonesSrc: observer('virtualSrc', function () {
     var opt = this.getProperties('clones', 'virtualSrc', 'manager');
     if (this._oldVirtualSrc !== opt.virtualSrc) {
       forEach(opt.clones, function (clone) {
@@ -216,7 +245,7 @@ export default Ember.Object.extend(Ember.Evented, {
    * @type Function
    * @private
    */
-  _onProgressHandler: Ember.computed(function () {
+  _onProgressHandler: computed(function () {
     return Ember.run.bind(this, function (event) {
       if (event.lengthComputable) {
         this.set('progress', event.loaded / event.total * 100);
@@ -231,7 +260,7 @@ export default Ember.Object.extend(Ember.Evented, {
    * @type Function
    * @private
    */
-  _onLoadHandler: Ember.computed(function () {
+  _onLoadHandler: computed(function () {
     return Ember.run.bind(this, function (event) {
       var opt = this.getProperties('node', '_onErrorHandler', '_onProgressHandler');
       helpers.detach(opt.node, 'error', opt._onErrorHandler);
@@ -252,14 +281,14 @@ export default Ember.Object.extend(Ember.Evented, {
    * @type Function
    * @private
    */
-  _onErrorHandler: Ember.computed(function () {
+  _onErrorHandler: computed(function () {
     return Ember.run.bind(this, function (event) {
       var opt = this.getProperties('node', '_onLoadHandler', '_onProgressHandler', 'maxTries', 'rule');
       helpers.detach(opt.node, 'load', opt._onLoadHandler);
       helpers.detach(opt.node, 'progress', opt._onProgressHandler);
       if (this.incrementProperty('errorCount') < opt.maxTries) {
         this._continueRuleProcessingQueue();
-        this._scheduleLoad();
+        this.scheduleLoad(true);
       }
       else {
         // we're done trying, trigger the `didError` event
@@ -276,22 +305,23 @@ export default Ember.Object.extend(Ember.Evented, {
   /**
    * Schedule the image load
    *
-   * @method _scheduleLoad
+   * @method scheduleLoad
+   * @param {boolean} [forceReload=false]
    * @private
    */
-  _scheduleLoad: Ember.on('init', function () {
-    this.get('rule').scheduleForLoad(this, '_load');
-  }),
+  scheduleLoad: function (forceReload) {
+    this.get('rule').scheduleForLoad(this, forceReload ? 'reload' : 'load');
+  },
 
   /**
    * Initiate the image load
    *
-   * @method _load
+   * @method reload
    * @private
    */
-  _load: function () {
+  reload: function () {
     this.notifyPropertyChange('src');
-    this.get('node');
+    this.load();
   },
 
   /**
@@ -300,7 +330,7 @@ export default Ember.Object.extend(Ember.Evented, {
    * @method _pauseRuleProcessingQueue
    * @private
    */
-  _pauseRuleProcessingQueue: Ember.on('willLoad', function () {
+  _pauseRuleProcessingQueue: on('willLoad', function () {
     this.get('rule').pauseLoadQueue();
   }),
 
@@ -310,7 +340,7 @@ export default Ember.Object.extend(Ember.Evented, {
    * @method _continueRuleProcessingQueue
    * @private
    */
-  _continueRuleProcessingQueue: Ember.on('ready', function () {
+  _continueRuleProcessingQueue: on('ready', function () {
     this.get('rule').continueLoadQueue();
   })
 

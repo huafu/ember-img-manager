@@ -6,6 +6,10 @@ import ENV from '../config/environment';
 var map = Ember.EnumerableUtils.map;
 var forEach = Ember.EnumerableUtils.forEach;
 var filter = Ember.EnumerableUtils.filter;
+var computed = Ember.computed;
+var readOnly = computed.readOnly;
+var bind = Ember.run.bind;
+var hasOwn = Object.prototype.hasOwnProperty;
 
 function keyForSrc(src) {
   return '$$img-manager$$' + (src || '');
@@ -22,12 +26,13 @@ export default Ember.Object.extend({
    * @property config
    * @type {Object}
    */
-  config: Ember.computed(function () {
+  config: computed(function () {
     return Ember.merge({
-      maxTries: 1,
+      maxTries:     1,
       loadingClass: 'loading',
-      errorClass: 'error',
-      successClass: 'success'
+      errorClass:   'error',
+      successClass: 'success',
+      lazyLoad:     true
     }, Ember.get(ENV, 'imgManager'));
   }).readOnly(),
 
@@ -36,56 +41,63 @@ export default Ember.Object.extend({
    * @property defaultDelay
    * @type {number}
    */
-  defaultDelay: Ember.computed.readOnly('config.delay'),
+  defaultDelay: readOnly('config.delay'),
+
+  /**
+   * The default lazyLoad
+   * @property defaultLazyLoad
+   * @type {boolean}
+   */
+  defaultLazyLoad: readOnly('config.lazyLoad'),
 
   /**
    * The default batch size
    * @property defaultBatchSize
    * @type {number}
    */
-  defaultBatchSize: Ember.computed.readOnly('config.batchSize'),
+  defaultBatchSize: readOnly('config.batchSize'),
 
   /**
    * The default max tries
    * @property defaultMaxTries
    * @type {number}
    */
-  defaultMaxTries: Ember.computed.readOnly('config.maxTries', 1),
+  defaultMaxTries: readOnly('config.maxTries', 1),
 
   /**
    * The default loading src
    * @property defaultLoadingSrc
    * @type {number}
    */
-  defaultLoadingSrc: Ember.computed.readOnly('config.loadingSrc'),
+  defaultLoadingSrc: readOnly('config.loadingSrc'),
 
   /**
    * The default error src
    * @property defaultErrorSrc
    * @type {number}
    */
-  defaultErrorSrc: Ember.computed.readOnly('config.errorSrc'),
+  defaultErrorSrc: readOnly('config.errorSrc'),
 
   /**
    * Default css class for the wrapper of a loading image
    * @property defaultLoadingClass
    * @type {string}
    */
-  defaultLoadingClass: Ember.computed.readOnly('config.loadingClass'),
+  defaultLoadingClass: readOnly('config.loadingClass'),
 
   /**
    * Default css class for the wrapper of an image which failed to load
    * @property defaultErrorClass
    * @type {string}
    */
-  defaultErrorClass: Ember.computed.readOnly('config.errorClass'),
+  defaultErrorClass: readOnly('config.errorClass'),
 
   /**
    * Default css class for the wrapper of an image which loaded successfully
    * @property defaultSuccessClass
    * @type {string}
    */
-  defaultSuccessClass: Ember.computed.readOnly('config.successClass'),
+  defaultSuccessClass: readOnly('config.successClass'),
 
 
   /**
@@ -105,7 +117,7 @@ export default Ember.Object.extend({
         manager: this
       });
       this.incrementProperty('totalSources');
-      imgSource.one('didError', Ember.run.bind(this, 'incrementProperty', 'totalErrors', 1));
+      imgSource.one('didError', bind(this, 'incrementProperty', 'totalErrors', 1));
     }
     return imgSource;
   },
@@ -135,7 +147,7 @@ export default Ember.Object.extend({
    * @property freeClonesContainer
    * @type {HTMLDivElement}
    */
-  freeClonesContainer: Ember.computed(function () {
+  freeClonesContainer: computed(function () {
     return document.createElement('div');
   }).readOnly(),
 
@@ -144,7 +156,7 @@ export default Ember.Object.extend({
    * @property freeClones
    * @type {Object}
    */
-  freeClones: Ember.computed(function () {
+  freeClones: computed(function () {
     return Object.create(null);
   }).readOnly(),
 
@@ -181,7 +193,7 @@ export default Ember.Object.extend({
    * @return {HTMLImageElement}
    */
   cloneForSrc: function (src, attributes) {
-    var clone = this.freeCloneFor(src), attrNames, meta;
+    var clone = this.freeCloneFor(src), attrNames, meta, name, value;
     if (!clone) {
       clone = this.bareNodeFor(src).cloneNode();
       Object.defineProperty(clone, '__imgManagerMeta', {
@@ -211,17 +223,20 @@ export default Ember.Object.extend({
       }
       else {
         // set attributes
-        forEach(attributes, function (value, name) {
-          if (name !== 'src' && value != null) {
-            attrNames.push(name);
-            if (clone.setAttribute) {
-              clone.setAttribute(name, value);
-            }
-            else {
-              clone[name] = value;
+        for (name in attributes) {
+          if (hasOwn.call(attributes, name)) {
+            value = attributes[name];
+            if (name !== 'src' && value != null) {
+              attrNames.push(name);
+              if (clone.setAttribute) {
+                clone.setAttribute(name, value);
+              }
+              else {
+                clone[name] = value;
+              }
             }
           }
-        });
+        }
       }
     }
     this.incrementProperty('totalUsedClones');
@@ -289,7 +304,7 @@ export default Ember.Object.extend({
    * Switch a clone so that it is replaced by one of the good src
    *
    * @method switchCloneForSrc
-   * @param {HTMLIFrameElement} clone
+   * @param {HTMLImageElement} clone
    * @param {string} newSrc
    */
   switchCloneForSrc: function (clone, newSrc) {
@@ -307,7 +322,7 @@ export default Ember.Object.extend({
    * @property rules
    * @type {Ember.Array.<ImgRule>}
    */
-  rules: Ember.computed(function () {
+  rules: computed(function () {
     var _this = this;
     var rules = Ember.A(map(this.get('config.rules') || [], function (ruleConfig) {
       return ImgRule.create({
@@ -378,7 +393,7 @@ export default Ember.Object.extend({
    * @property _bareNodes
    * @type {Object}
    */
-  _bareNodes: Ember.computed(function () {
+  _bareNodes: computed(function () {
     return Object.create(null);
   }).readOnly(),
 
@@ -388,7 +403,7 @@ export default Ember.Object.extend({
    * @property _imgSources
    * @type {Object}
    */
-  _imgSources: Ember.computed(function () {
+  _imgSources: computed(function () {
     return Object.create(null);
   }).readOnly()
 });
