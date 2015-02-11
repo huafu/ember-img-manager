@@ -1,6 +1,6 @@
 {
   "name": "ember-img-manager",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "An `<img>` manager for Ember with cache, batch load and error handling.",
   "directories": {
     "doc": "doc",
