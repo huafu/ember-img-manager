@@ -1,11 +1,5 @@
-// Copied from https://github.com/twokul/ember-lazy-image but some improvements from @huafu_g:
-// - added documentation
-// - made it more Ember
-// - fixed handlers
-// - once `enteredViewport` has been set to `true`, remove all listeners
-// - fixed an issue where it'd try to set a property of a destroyed view
-
-// Inspired by Lauren Tan
+// Inspired from:
+// https://github.com/twokul/ember-lazy-image
 // https://medium.com/delightful-ui-for-ember-apps/ember-js-detecting-if-a-dom-element-is-in-the-viewport-eafcc77a6f86
 
 import Ember from 'ember';
@@ -20,8 +14,9 @@ var bind = Ember.run.bind;
 /**
  * @mixin ImgManagerInViewportMixin
  * @extension ImgManagerInViewportMixin
+ * @uses Ember.Evented
  */
-export default Ember.Mixin.create({
+export default Ember.Mixin.create(Ember.Evented, {
   /**
    * The timeout to observe scrolling
    * @property scrollTimeout
@@ -34,10 +29,13 @@ export default Ember.Mixin.create({
    * @property enteredViewport
    * @type {boolean}
    */
-  enteredViewport: computed(function (key, value) {
+  enteredViewport: computed(function (key, value, oldValue) {
     if (arguments.length > 1) {
       if (value) {
         this._unbindScroll();
+        if (!oldValue) {
+          this.trigger('didEnterViewport');
+        }
       }
     }
     else {

@@ -159,13 +159,13 @@ var ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
   }).on('didInsertElement'),
 
   /**
-   * Observes the enteredViewport property to schedule a load
+   * Schedule a load when the image enters the viewport
    *
-   * @method _inViewportHandler
+   * @method _enteredViewportHandler
    * @private
    */
-  _inViewportHandler: Ember.observer('enteredViewport', function () {
-    if (this._currentClone && this.get('enteredViewport') && !this.get('imgSource.isReady')) {
+  _enteredViewportHandler: Ember.on('didEnterViewport', function () {
+    if (this._currentClone && !this.get('imgSource.isReady')) {
       this.get('imgSource').scheduleLoad();
     }
   }),
