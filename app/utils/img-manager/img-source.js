@@ -104,7 +104,6 @@ export default Ember.Object.extend(Ember.Evented, {
    * @type {HTMLImageElement}
    */
   node: computed('src', function () {
-    this._loading = false;
     return document.createElement('img');
   }).readOnly(),
 
@@ -138,6 +137,7 @@ export default Ember.Object.extend(Ember.Evented, {
       else {
         // do not even try to load the image, and directly fires the ready event
         Ember.run.next(this, function () {
+          this._loading = false;
           this.setProperties({isError: true, isLoading: false});
           this.trigger('ready');
         });
@@ -265,6 +265,7 @@ export default Ember.Object.extend(Ember.Evented, {
       var opt = this.getProperties('node', '_onErrorHandler', '_onProgressHandler');
       helpers.detach(opt.node, 'error', opt._onErrorHandler);
       helpers.detach(opt.node, 'progress', opt._onProgressHandler);
+      this._loading = false;
       this.setProperties({
         isError:   false,
         isLoading: false,
@@ -286,6 +287,7 @@ export default Ember.Object.extend(Ember.Evented, {
       var opt = this.getProperties('node', '_onLoadHandler', '_onProgressHandler', 'maxTries', 'rule');
       helpers.detach(opt.node, 'load', opt._onLoadHandler);
       helpers.detach(opt.node, 'progress', opt._onProgressHandler);
+      this._loading = false;
       if (this.incrementProperty('errorCount') < opt.maxTries) {
         this._continueRuleProcessingQueue();
         this.scheduleLoad(true);
@@ -310,6 +312,10 @@ export default Ember.Object.extend(Ember.Evented, {
    * @private
    */
   scheduleLoad: function (forceReload) {
+    Ember.debug(
+      '[img-manager] scheduling ' + (forceReload ? 're' : '') +
+      'load in rule load queue for src `' + this.get('src') + '`.'
+    );
     this.get('rule').scheduleForLoad(this, forceReload ? 'reload' : 'load');
   },
 
@@ -331,6 +337,7 @@ export default Ember.Object.extend(Ember.Evented, {
    * @private
    */
   _pauseRuleProcessingQueue: on('willLoad', function () {
+    Ember.debug('[img-manager] pausing rule load queue for src `' + this.get('src') + '`.');
     this.get('rule').pauseLoadQueue();
   }),
 
@@ -341,6 +348,7 @@ export default Ember.Object.extend(Ember.Evented, {
    * @private
    */
   _continueRuleProcessingQueue: on('ready', function () {
+    Ember.debug('[img-manager] continuing rule load queue for src `' + this.get('src') + '`.');
     this.get('rule').continueLoadQueue();
   })
 
