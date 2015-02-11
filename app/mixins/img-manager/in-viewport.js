@@ -34,6 +34,7 @@ export default Ember.Mixin.create(Ember.Evented, {
       if (value) {
         this._unbindScroll();
         if (!oldValue) {
+          Ember.debug('[img-manager] Element entered viewport: ' + this + '.');
           this.trigger('didEnterViewport');
         }
       }
@@ -52,7 +53,7 @@ export default Ember.Mixin.create(Ember.Evented, {
    */
   _setViewport: function () {
     var rect;
-    if (this.isDestroying || this.isDestroyed || this._state !== 'inDOM') {
+    if (this.isDestroying || this.isDestroyed || this._state !== 'inDOM' || this.get('enteredViewport')) {
       return;
     }
     rect = this.$()[0].getBoundingClientRect();
@@ -71,9 +72,7 @@ export default Ember.Mixin.create(Ember.Evented, {
    * @private
    */
   _setInitialViewport: on('didInsertElement', function () {
-    if (!this.get('enteredViewport')) {
-      scheduleOnce('afterRender', this, '_setViewport');
-    }
+    scheduleOnce('afterRender', this, '_setViewport');
   }),
 
   /**
@@ -83,9 +82,7 @@ export default Ember.Mixin.create(Ember.Evented, {
    * @private
    */
   _scrollHandler: function () {
-    if (!this.get('enteredViewport')) {
-      debounce(this, '_setViewport', get(this, 'scrollTimeout'));
-    }
+    debounce(this, '_setViewport', get(this, 'scrollTimeout'));
   },
 
   /**

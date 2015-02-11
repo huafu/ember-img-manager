@@ -266,12 +266,12 @@ export default Ember.Object.extend({
     else {
       if (index === -1) {
         attrNames.push(name);
-        if (clone.setAttribute) {
-          clone.setAttribute(name, value);
-        }
-        else {
-          clone[name] = value;
-        }
+      }
+      if (clone.setAttribute) {
+        clone.setAttribute(name, value);
+      }
+      else {
+        clone[name] = value;
       }
     }
   },
@@ -284,17 +284,23 @@ export default Ember.Object.extend({
    * @param {HTMLImageElement} clone
    */
   releaseClone: function (clone) {
-    var meta = clone.__imgManagerMeta,
-      opt = this.getProperties('freeClonesContainer', 'freeClones'),
-      dict = opt.freeClones[meta.key];
+    var meta, opt, dict;
+    meta = clone.__imgManagerMeta;
+    opt = this.getProperties('freeClonesContainer', 'freeClones');
+    forEach(meta.attributeNames, function (name) {
+      clone.removeAttribute(name);
+    });
+    // this should not be necessary, added to try to debug a crash of the browsers
+    if(clone.parentNode){
+      clone.parentNode.removeChild(clone);
+    }
+    // this should remove the node from its old container
     opt.freeClonesContainer.appendChild(clone);
+    dict = opt.freeClones[meta.key];
     if (!dict) {
       dict = opt.freeClones[meta.key] = [];
     }
     dict.push(clone);
-    forEach(meta.attributeNames, function (name) {
-      clone.removeAttribute(name);
-    });
     meta.attributeNames = [];
     this.incrementProperty('totalFreeClones');
     this.incrementProperty('totalUsedClones', -1);
@@ -306,6 +312,7 @@ export default Ember.Object.extend({
    * @method switchCloneForSrc
    * @param {HTMLImageElement} clone
    * @param {string} newSrc
+   * @return {HTMLImageElement}
    */
   switchCloneForSrc: function (clone, newSrc) {
     var newKey = keyForSrc(newSrc), newClone, meta = clone.__imgManagerMeta;
@@ -313,7 +320,9 @@ export default Ember.Object.extend({
       newClone = this.cloneForSrc(newSrc, clone);
       clone.parentNode.replaceChild(newClone, clone);
       this.releaseClone(clone);
+      return newClone;
     }
+    return clone;
   },
 
 

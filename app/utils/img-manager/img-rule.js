@@ -1,5 +1,13 @@
 import Ember from 'ember';
 
+var slice = [].slice;
+var run = Ember.run;
+var next = run.next;
+var debounce = run.debounce;
+var computed = Ember.computed;
+var readOnly = computed.readOnly;
+
+
 function starMatcher() {
   return true;
 }
@@ -24,7 +32,7 @@ function callQueueItem(item) {
 
 function anyDefined() {
   var props = Array.prototype.slice.call(arguments);
-  return Ember.computed.apply(Ember, props.concat([function () {
+  return computed.apply(Ember, props.concat([function () {
     var val;
     for (var i = 0; i < props.length; i++) {
       val = this.get(props[i]);
@@ -60,7 +68,7 @@ export default Ember.Object.extend({
    * @property batchSize
    * @type {number}
    */
-  batchSize: Ember.computed('config.batchSize', 'manager.defaultBatchSize', function () {
+  batchSize: computed('config.batchSize', 'manager.defaultBatchSize', function () {
     var batchSize = this.get('config.batchSize');
     if (batchSize === undefined) {
       batchSize = this.get('manager.defaultBatchSize');
@@ -73,7 +81,7 @@ export default Ember.Object.extend({
    * @property match
    * @type {string|RegExp|Function}
    */
-  match: Ember.computed.readOnly('config.match'),
+  match: readOnly('config.match'),
 
   /**
    * How many milliseconds to wait before loading next batch
@@ -115,12 +123,12 @@ export default Ember.Object.extend({
    * @property loadQueuePausedCount
    * @type {number}
    */
-  loadQueuePausedCount: Ember.computed(function (key, value) {
+  loadQueuePausedCount: computed(function (key, value) {
     if (arguments.length > 1) {
       // set
       if (value === 0) {
         // time to schedule the queue processing
-        Ember.run.next(this, 'processLoadQueue');
+        next(this, 'processLoadQueue');
       }
       return value;
     }
@@ -154,7 +162,7 @@ export default Ember.Object.extend({
    * @property matcher
    * @type {Function}
    */
-  matcher: Ember.computed('match', function () {
+  matcher: computed('match', function () {
     var match = this.get('match');
     if (match === undefined || match === '*') {
       return starMatcher;
@@ -206,7 +214,7 @@ export default Ember.Object.extend({
       args = [];
     }
     else {
-      args = Array.prototype.slice(arguments, 2);
+      args = slice.call(arguments, 2);
     }
     this.get('_loadQueue').pushObject([target, method, args]);
     this.processLoadQueue();
@@ -222,7 +230,7 @@ export default Ember.Object.extend({
     if (!opt._loadQueue.length || opt.loadQueuePausedCount > 0) {
       return;
     }
-    this._timer = Ember.run.debounce(this, '_processLoadQueue', opt.delay || 1);
+    this._timer = debounce(this, '_processLoadQueue', opt.delay || 1);
   },
 
   /**
@@ -231,7 +239,7 @@ export default Ember.Object.extend({
    * @type {Array.<Function>}
    * @private
    */
-  _loadQueue: Ember.computed(function () {
+  _loadQueue: computed(function () {
     return [];
   }),
 
@@ -250,6 +258,6 @@ export default Ember.Object.extend({
         callQueueItem(items[i]);
       }
     }
-    Ember.run.next(this, 'processLoadQueue');
+    next(this, 'processLoadQueue');
   }
 });

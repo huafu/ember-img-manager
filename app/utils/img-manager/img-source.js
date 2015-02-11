@@ -6,6 +6,8 @@ var observer = Ember.observer;
 var computed = Ember.computed;
 var oneWay = computed.oneWay;
 var on = Ember.on;
+var bind = Ember.run.bind;
+var next = Ember.run.next;
 
 var uuid = 0;
 function appendDummyQP(url) {
@@ -63,7 +65,7 @@ export default Ember.Object.extend(Ember.Evented, {
    * @property rule
    * @type {ImgRule}
    */
-  rule: computed('src', function () {
+  rule: computed(function () {
     var opt = this.getProperties('manager', 'src');
     return opt.manager.ruleForSrc(opt.src);
   }).readOnly(),
@@ -81,6 +83,13 @@ export default Ember.Object.extend(Ember.Evented, {
    * @type {boolean}
    */
   isError: false,
+
+  /**
+   * Is the real load initiated?
+   * @property isInitiated
+   * @type {boolean}
+   */
+  isInitiated: false,
 
   /**
    * Are we ready? either loaded or error
@@ -103,7 +112,7 @@ export default Ember.Object.extend(Ember.Evented, {
    * @property node
    * @type {HTMLImageElement}
    */
-  node: computed('src', function () {
+  node: computed(function () {
     return document.createElement('img');
   }).readOnly(),
 
@@ -113,9 +122,9 @@ export default Ember.Object.extend(Ember.Evented, {
    * @method load
    */
   load: function () {
-    var node, opt;
-    if (!this._loading) {
-      this._loading = true;
+    var node, opt, src;
+    if (!this.get('isInitiated')) {
+      this.set('isInitiated', true);
       opt = this.getProperties(
         'src', '_onLoadHandler', '_onErrorHandler', '_onProgressHandler', 'maxTries'
       );
@@ -128,16 +137,17 @@ export default Ember.Object.extend(Ember.Evented, {
         helpers.attachOnce(node, 'error', opt._onErrorHandler);
         helpers.attachOnce(node, 'progress', opt._onProgressHandler);
         if (this.get('errorCount')) {
-          node.src = appendDummyQP(opt.src);
+          src = appendDummyQP(opt.src);
         }
         else {
-          node.src = opt.src;
+          src = opt.src;
         }
+        this.set('modifiedSrc', src);
+        node.src = src;
       }
       else {
         // do not even try to load the image, and directly fires the ready event
-        Ember.run.next(this, function () {
-          this._loading = false;
+        next(this, function () {
           this.setProperties({isError: true, isLoading: false});
           this.trigger('ready');
         });
@@ -181,7 +191,7 @@ export default Ember.Object.extend(Ember.Evented, {
     }
     else {
       // use the node.src since we might have added some parameters for another try
-      return this.get('node.src');
+      return this.get('modifiedSrc');
     }
   }).readOnly(),
 
@@ -224,19 +234,33 @@ export default Ember.Object.extend(Ember.Evented, {
   },
 
   /**
-   * Switch the clones' src when the ready event is fired
+   * Schedule a switch of src for all the clones when the ready event is fired
    *
    * @method switchClonesSrc
    */
   switchClonesSrc: observer('virtualSrc', function () {
-    var opt = this.getProperties('clones', 'virtualSrc', 'manager');
+    Ember.run.scheduleOnce('afterRender', this, '_switchClonesSrc');
+  }).on('ready'),
+
+  /**
+   * Switch the clones' src
+   *
+   * @method _switchClonesSrc
+   * @private
+   */
+  _switchClonesSrc: function () {
+    var opt;
+    opt = this.getProperties('clones', 'virtualSrc', 'manager');
     if (this._oldVirtualSrc !== opt.virtualSrc) {
-      forEach(opt.clones, function (clone) {
-        opt.manager.switchCloneForSrc(clone, opt.virtualSrc);
+      forEach(opt.clones, function (clone, i) {
+        // switch only if the clone is still in the DOM
+        if (clone.parentNode) {
+          opt.clones[i] = opt.manager.switchCloneForSrc(clone, opt.virtualSrc);
+        }
       });
       this._oldVirtualSrc = opt.virtualSrc;
     }
-  }).on('ready'),
+  },
 
 
   /**
@@ -246,7 +270,7 @@ export default Ember.Object.extend(Ember.Evented, {
    * @private
    */
   _onProgressHandler: computed(function () {
-    return Ember.run.bind(this, function (event) {
+    return bind(this, function (event) {
       if (event.lengthComputable) {
         this.set('progress', event.loaded / event.total * 100);
       }
@@ -261,11 +285,10 @@ export default Ember.Object.extend(Ember.Evented, {
    * @private
    */
   _onLoadHandler: computed(function () {
-    return Ember.run.bind(this, function (event) {
+    return bind(this, function (event) {
       var opt = this.getProperties('node', '_onErrorHandler', '_onProgressHandler');
       helpers.detach(opt.node, 'error', opt._onErrorHandler);
       helpers.detach(opt.node, 'progress', opt._onProgressHandler);
-      this._loading = false;
       this.setProperties({
         isError:   false,
         isLoading: false,
@@ -283,11 +306,10 @@ export default Ember.Object.extend(Ember.Evented, {
    * @private
    */
   _onErrorHandler: computed(function () {
-    return Ember.run.bind(this, function (event) {
+    return bind(this, function (event) {
       var opt = this.getProperties('node', '_onLoadHandler', '_onProgressHandler', 'maxTries', 'rule');
       helpers.detach(opt.node, 'load', opt._onLoadHandler);
       helpers.detach(opt.node, 'progress', opt._onProgressHandler);
-      this._loading = false;
       if (this.incrementProperty('errorCount') < opt.maxTries) {
         this._continueRuleProcessingQueue();
         this.scheduleLoad(true);
@@ -312,22 +334,13 @@ export default Ember.Object.extend(Ember.Evented, {
    * @private
    */
   scheduleLoad: function (forceReload) {
-    Ember.debug(
-      '[img-manager] scheduling ' + (forceReload ? 're' : '') +
-      'load in rule load queue for src `' + this.get('src') + '`.'
-    );
-    this.get('rule').scheduleForLoad(this, forceReload ? 'reload' : 'load');
-  },
-
-  /**
-   * Initiate the image load
-   *
-   * @method reload
-   * @private
-   */
-  reload: function () {
-    this.notifyPropertyChange('src');
-    this.load();
+    var initiated = this.get('isInitiated');
+    if (initiated && forceReload) {
+      this.set('isInitiated', initiated = false);
+    }
+    if (!initiated) {
+      this.get('rule').scheduleForLoad(this, 'load');
+    }
   },
 
   /**
