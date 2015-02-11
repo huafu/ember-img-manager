@@ -140,23 +140,12 @@ var ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
       }
     }).readOnly(),
 
-
   /**
-   * Insert our clone in the DOM
-   *
-   * @method _insertClone
-   * @private
+   * @inheritDoc
    */
-  _insertClone: Ember.observer('src', function () {
-    var clone;
-    if (this._state === 'inDOM' && (clone = this._createClone())) {
-      // the _createClone will also release the old one if any
-      this.get('element').appendChild(clone);
-      if (this.get('enteredViewport')) {
-        this.get('imgSource').scheduleLoad();
-      }
-    }
-  }).on('didInsertElement'),
+  render: function (buffer) {
+    buffer.push(this._createClone());
+  },
 
   /**
    * Schedule a load when the image enters the viewport
@@ -226,6 +215,9 @@ var ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
         imgSource: imgSource,
         clone:     clone
       };
+      if (this.get('enteredViewport')) {
+        Ember.run.next(imgSource, 'scheduleLoad');
+      }
     }
     return clone;
   }
