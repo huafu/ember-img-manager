@@ -11,10 +11,16 @@ var computed = Ember.computed;
 var readOnly = computed.readOnly;
 var oneWay = computed.oneWay;
 var run = Ember.run;
-var next = run.next;
-var scheduleOnce = run.scheduleOnce;
+var bind = run.bind;
 var on = Ember.on;
-var observer = Ember.observer;
+
+
+/**
+ * @module img-manager/img-source
+ * @class Current
+ * @property {ImgSource} source
+ * @property {ImgCloneHolder} cloneHolder
+ */
 
 /**
  * @class ImgWrapComponent
@@ -57,17 +63,52 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
    * @property src
    * @type {string}
    */
-  src: null,
+  src: computed(function (key, value, oldValue) {
+    var imgSource, cloneHolder;
+    if (arguments.length > 1 && value !== oldValue) {
+      this.releaseCloneHolder();
+      if (value) {
+        imgSource = this.manager.imgSourceForSrc(value);
+        cloneHolder = imgSource.createClone(this.get(IMG_ATTRIBUTES), this.get('_cloneHolderActionHandler'));
+        this.setProperties({
+          imgSource:   imgSource,
+          cloneHolder: cloneHolder
+        });
+        this._insertImgNode();
+      }
+    }
+    return value;
+  }),
+
+  /**
+   * Releases the clone holder
+   *
+   * @method releaseCloneHolder
+   */
+  releaseCloneHolder: on('destroy', function () {
+    var cloneHolder = this.get('cloneHolder');
+    if (cloneHolder) {
+      this.get('imgSource').releaseClone(cloneHolder);
+    }
+    this.setProperties({
+      cloneHolder: null,
+      imgSource:   null
+    });
+  }),
 
   /**
    * Our image source
    * @property imgSource
    * @type {ImgSource}
    */
-  imgSource: computed('src', function () {
-    var opt = this.getProperties('manager', 'src');
-    return opt.src ? opt.manager.imgSourceForSrc(opt.src) : null;
-  }).readOnly(),
+  imgSource: null,
+
+  /**
+   * Our clone holder
+   * @property cloneHolder
+   * @type {ImgCloneHolder}
+   */
+  cloneHolder: null,
 
   /**
    * Is it loading the source image?
@@ -147,68 +188,15 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
     }).readOnly(),
 
   /**
-   * Schedule a load when the image enters the viewport
+   * Inserts the clone in the element if this one is in the DOM
    *
-   * @method _enteredViewportHandler
-   * @private
+   * @method _insertImgNode
    */
-  _enteredViewportHandler: on('didEnterViewport', function () {
-    if (this._currentCloneSource && !this.get('imgSource.isReady')) {
-      this.get('imgSource').scheduleLoad();
-    }
-  }),
-
-  /**
-   * Sends the correct event related to the current status
-   *
-   * @method _sendStatusAction
-   * @private
-   */
-  _sendStatusAction: Ember.observer('imgSource.isError', 'imgSource.isSuccess', function () {
-    if (this.get('imgSource.isError')) {
-      this.sendAction('load-error');
-    }
-    else if (this.get('imgSource.isSuccess')) {
-      this.sendAction('load-success');
-    }
-  }),
-
-  /**
-   * Called when the src is changed or when the element is inserted into the DOM
-   *
-   * @method _insertClone
-   * @private
-   */
-  _insertClone: observer('src', function () {
-    if (this._state !== 'inDOM') {
-      scheduleOnce('afterRender', this, '_insertClone');
-    }
-    else {
-      this.get('element').appendChild(this._createClone());
-    }
-  }).on('didInsertElement'),
-
-
-  /**
-   * Release the clone used if any
-   *
-   * @method _releaseClone
-   * @private
-   */
-  _releaseClone: on('willDestroyElement', function () {
-    var src, clone;
-    src = this._currentCloneSource;
-    if (src) {
-      if (this._state === 'inDOM') {
-        clone = this.get('element').lastChild;
-        if (clone) {
-          next(src, 'releaseClone', clone);
-          this._currentCloneSource = null;
-        }
-      }
-      else {
-        throw new Error('[img-manager] Trying to release a clone while not in the DOM.');
-      }
+  _insertImgNode: on('didInsertElement', function () {
+    var cloneHolder;
+    if (this._state === 'inDOM' && (cloneHolder = this.get('cloneHolder'))) {
+      this.get('element').appendChild(cloneHolder.node);
+      this._scheduleSourceLoad();
     }
   }),
 
@@ -225,34 +213,46 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
   }),
 
   /**
-   * Create a clone after releasing the possible existing one
+   * Starts loading the source when the element enter the viewport
    *
-   * @method _createClone
-   * @private
+   * @method _scheduleSourceLoad
    */
-  _createClone: function () {
-    var clone, imgSource = this.get('imgSource');
-    this._releaseClone();
-    if (imgSource) {
-      clone = imgSource.createClone(this.getProperties(IMG_ATTRIBUTES));
-      this._currentCloneSource = imgSource;
-      if (this.get('enteredViewport')) {
-        next(imgSource, 'scheduleLoad');
-      }
+  _scheduleSourceLoad: on('didEnterViewport', function () {
+    var imgSource = this.get('imgSource');
+    if (this._state === 'inDOM' && this.get('enteredViewport')) {
+      //Ember.debug('[img-manager] Scheduling load for `' + imgSource.get('src') + '`.');
+      imgSource.scheduleLoad();
     }
-    return clone;
-  }
+  }),
 
+  /**
+   * The handler called when the source is changed
+   * @property _cloneHolderActionHandler
+   * @type {Function}
+   */
+  _cloneHolderActionHandler: computed(function () {
+    return bind(this, function (action, imgNode) {
+      var imgSource;
+      if (action === 'change') {
+        imgSource = this.get('imgSource');
+        if (imgSource) {
+          this._insertImgNode();
+          this.sendAction('load-' + (imgSource.get('isSuccess') ? 'success' : 'error' ), imgNode);
+        }
+      }
+    });
+  })
 });
 
 // now create the setters for each image attribute so that we can update them on each clone
 var extra = {};
 Ember.EnumerableUtils.forEach(IMG_ATTRIBUTES, function (name) {
   extra[name] = computed(function (key, value) {
-    var clone;
+    var current;
     if (arguments.length > 1 && !this.isDestroying && !this.isDestroyed && this._state === 'inDOM') {
-      if (this._currentCloneSource && (clone = this.get('element').lastChild)) {
-        this.get('manager').setCloneAttribute(clone, name, value);
+      current = this.get('cloneHolder');
+      if (current && current.cloneHolder.clone) {
+        current.cloneHolder.setAttribute(name, value);
       }
       return value;
     }

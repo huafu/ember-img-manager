@@ -10,6 +10,7 @@ var debounce = Ember.run.debounce;
 var scheduleOnce = Ember.run.scheduleOnce;
 var computed = Ember.computed;
 var bind = Ember.run.bind;
+var next = Ember.run.next;
 
 /**
  * @mixin ImgManagerInViewportMixin
@@ -34,8 +35,8 @@ export default Ember.Mixin.create(Ember.Evented, {
       if (value) {
         this._unbindScroll();
         if (!oldValue) {
-          Ember.debug('[img-manager] Element entered viewport: ' + this + '.');
-          this.trigger('didEnterViewport');
+          //Ember.debug('[img-manager] Element entered viewport: ' + this + '.');
+          next(this, 'trigger', 'didEnterViewport');
         }
       }
     }

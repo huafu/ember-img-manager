@@ -1,13 +1,16 @@
 import Ember from 'ember';
 import helpers from './dom-helpers';
+import ImgCloneHolder from './img-clone-holder';
 
-var forEach = Ember.EnumerableUtils.forEach;
+var assert = Ember.assert;
 var observer = Ember.observer;
 var computed = Ember.computed;
 var oneWay = computed.oneWay;
+var or = computed.or;
 var on = Ember.on;
 var bind = Ember.run.bind;
 var next = Ember.run.next;
+
 
 var uuid = 0;
 function appendDummyQP(url) {
@@ -96,7 +99,7 @@ export default Ember.Object.extend(Ember.Evented, {
    * @property isReady
    * @type {boolean}
    */
-  isReady: computed.or('isError', 'isSuccess'),
+  isReady: or('isError', 'isSuccess'),
 
   /**
    * Whether we are loaded successfully or not
@@ -105,7 +108,7 @@ export default Ember.Object.extend(Ember.Evented, {
    */
   isSuccess: computed('isLoading', 'isError', function () {
     return !this.get('isLoading') && !this.get('isError');
-  }).readOnly(),
+  }),
 
   /**
    * Our source node
@@ -198,10 +201,19 @@ export default Ember.Object.extend(Ember.Evented, {
 
   /**
    * All the existing clones for this image
-   * @property clones
-   * @type {Array.<HTMLImageElement>}
+   * @property cloneHolders
+   * @type {Array.<ImgCloneHolder>}
    */
-  clones: computed(function () {
+  cloneHolders: computed(function () {
+    return [];
+  }).readOnly(),
+
+  /**
+   * All the existing free clones for this image
+   * @property freeCloneHolders
+   * @type {Array.<ImgCloneHolder>}
+   */
+  freeCloneHolders: computed(function () {
     return [];
   }).readOnly(),
 
@@ -211,26 +223,34 @@ export default Ember.Object.extend(Ember.Evented, {
    *
    * @method createClone
    * @param {Object} attributes
-   * @return {HTMLImageElement}
+   * @param {Function} [handler]
+   * @return {ImgCloneHolder}
    */
-  createClone: function (attributes) {
-    var opt = this.getProperties('virtualSrc', 'clones', 'manager');
-    var clone = opt.manager.cloneForSrc(opt.virtualSrc, attributes);
-    opt.clones.push(clone);
+  createClone: function (attributes, handler) {
+    var cloneHolder, original;
+    cloneHolder = this.get('freeCloneHolders').pop();
+    original = this.get('isSuccess') ? this.get('node') : null;
+    if (!cloneHolder) {
+      cloneHolder = new ImgCloneHolder();
+    }
+    cloneHolder.useWith(this.get('virtualSrc'), attributes, original, handler);
+    this.get('cloneHolders').push(cloneHolder);
     this.incrementProperty('hits');
-    return clone;
+    return cloneHolder;
   },
 
   /**
    * Release a clone
    *
    * @method releaseClone
-   * @param {HTMLImageElement} clone
+   * @param {ImgCloneHolder} cloneHolder
    */
-  releaseClone: function (clone) {
-    var opt = this.getProperties('clones', 'manager'), index = opt.clones.indexOf(clone);
-    opt.clones.splice(index, 1);
-    opt.manager.releaseClone(clone);
+  releaseClone: function (cloneHolder) {
+    var cloneHolders = this.get('cloneHolders'), index = cloneHolders.indexOf(cloneHolder);
+    assert('[img-manager] Clone holder asked to be released does not belong to this source', index !== -1);
+    cloneHolder.release();
+    cloneHolders.splice(index, 1);
+    this.get('freeCloneHolders').push(cloneHolder);
   },
 
   /**
@@ -239,7 +259,7 @@ export default Ember.Object.extend(Ember.Evented, {
    * @method switchClonesSrc
    */
   switchClonesSrc: observer('virtualSrc', function () {
-    Ember.run.scheduleOnce('afterRender', this, '_switchClonesSrc');
+    next(this, '_switchClonesSrc');
   }).on('ready'),
 
   /**
@@ -249,15 +269,15 @@ export default Ember.Object.extend(Ember.Evented, {
    * @private
    */
   _switchClonesSrc: function () {
-    var opt;
-    opt = this.getProperties('clones', 'virtualSrc', 'manager');
+    var opt, original, i, len;
+    opt = this.getProperties('cloneHolders', 'virtualSrc', 'manager', 'isSuccess', 'node');
+    if (opt.isSuccess) {
+      original = opt.node;
+    }
     if (this._oldVirtualSrc !== opt.virtualSrc) {
-      forEach(opt.clones, function (clone, i) {
-        // switch only if the clone is still in the DOM
-        if (clone.parentNode) {
-          opt.clones[i] = opt.manager.switchCloneForSrc(clone, opt.virtualSrc);
-        }
-      });
+      for (i = 0, len = opt.cloneHolders.length; i < len; i++) {
+        opt.cloneHolders[i].switchSrc(opt.virtualSrc, original);
+      }
       this._oldVirtualSrc = opt.virtualSrc;
     }
   },
@@ -350,7 +370,6 @@ export default Ember.Object.extend(Ember.Evented, {
    * @private
    */
   _pauseRuleProcessingQueue: on('willLoad', function () {
-    Ember.debug('[img-manager] pausing rule load queue for src `' + this.get('src') + '`.');
     this.get('rule').pauseLoadQueue();
   }),
 
@@ -361,8 +380,6 @@ export default Ember.Object.extend(Ember.Evented, {
    * @private
    */
   _continueRuleProcessingQueue: on('ready', function () {
-    Ember.debug('[img-manager] continuing rule load queue for src `' + this.get('src') + '`.');
     this.get('rule').continueLoadQueue();
   })
-
 });
