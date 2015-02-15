@@ -12,6 +12,7 @@ var readOnly = computed.readOnly;
 var oneWay = computed.oneWay;
 var run = Ember.run;
 var bind = run.bind;
+var once = run.once;
 var on = Ember.on;
 
 
@@ -64,21 +65,35 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
    * @type {string}
    */
   src: computed(function (key, value, oldValue) {
-    var imgSource, cloneHolder;
     if (arguments.length > 1 && value !== oldValue) {
-      this.releaseCloneHolder();
-      if (value) {
-        imgSource = this.manager.imgSourceForSrc(value);
-        cloneHolder = imgSource.createClone(this.get(IMG_ATTRIBUTES), this.get('_cloneHolderActionHandler'));
-        this.setProperties({
-          imgSource:   imgSource,
-          cloneHolder: cloneHolder
-        });
-        this._insertImgNode();
-      }
+      once(this, '_updateSrc', value);
     }
     return value;
   }),
+
+  /**
+   * Update the src property and its dependencies
+   *
+   * @method _updateSrc
+   * @param {string} src
+   * @private
+   */
+  _updateSrc: function (src) {
+    var imgSource, cloneHolder;
+    this.releaseCloneHolder();
+    if (src) {
+      imgSource = this.manager.imgSourceForSrc(src);
+      cloneHolder = imgSource.createClone(
+        this.getProperties(IMG_ATTRIBUTES), this.get('_cloneHolderActionHandler')
+      );
+      this.setProperties({
+        imgSource:   imgSource,
+        cloneHolder: cloneHolder
+      });
+      this._insertImgNode();
+    }
+  },
+
 
   /**
    * Releases the clone holder
@@ -175,7 +190,12 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
     'imgSource.isLoading', 'imgSource.isError', 'imgSource.isSuccess',
     'loadingClass', 'errorClass', 'successClass',
     function () {
-      var opt = this.get('imgSource').getProperties('isLoading', 'isError', 'isSuccess');
+      var imgSource, opt;
+      imgSource = this.get('imgSource');
+      if (!imgSource) {
+        return this.get('loadingClass');
+      }
+      opt = imgSource.getProperties('isLoading', 'isError', 'isSuccess');
       if (opt.isLoading) {
         return this.get('loadingClass');
       }
@@ -219,7 +239,7 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
    */
   _scheduleSourceLoad: on('didEnterViewport', function () {
     var imgSource = this.get('imgSource');
-    if (this._state === 'inDOM' && this.get('enteredViewport')) {
+    if (imgSource && this._state === 'inDOM' && this.get('enteredViewport')) {
       //Ember.debug('[img-manager] Scheduling load for `' + imgSource.get('src') + '`.');
       imgSource.scheduleLoad();
     }
@@ -254,8 +274,8 @@ Ember.EnumerableUtils.forEach(IMG_ATTRIBUTES, function (name) {
       if (current && current.cloneHolder.clone) {
         current.cloneHolder.setAttribute(name, value);
       }
-      return value;
     }
+    return value;
   });
 });
 ImgWrapComponent.reopen(extra);

@@ -11,7 +11,7 @@ var hasOwn = {}.hasOwnProperty;
 var run = Ember.run;
 var next = run.next;
 
-var TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+export var TRANSPARENT_PIXEL = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
 /**
  * Set an attribute of a node
@@ -122,7 +122,7 @@ function ImgCloneHolder() {
   proto.useWith = function (src, attributes, original, handler) {
     assert('[img-manager] Clone already used for src `' + this.src + '`.', !this.src);
     this.src = src || TRANSPARENT_PIXEL;
-    this.node = imgFactory.forSrc(src, original);
+    this.node = imgFactory.forSrc(this.src, original);
     this.handler = handler || Ember.K;
     this._defineAttributes(attributes);
     return this;
