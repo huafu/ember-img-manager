@@ -1,4 +1,4 @@
-# ember-img-manager
+# ember-img-manager [![Build Status](https://travis-ci.org/huafu/ember-img-manager.svg?branch=master)](https://travis-ci.org/huafu/ember-img-manager)
 
 This Ember addon lets you control how images are loaded (batch size, delay, ...),
 setup events for success or error, re-use DOM `img` nodes by cloning them so that
