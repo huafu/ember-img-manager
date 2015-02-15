@@ -45,8 +45,9 @@
     "currentURL",
     "currentPath",
     "currentRouteName",
-    // -----
-    "later"
+
+    "later",
+    "controllerFor"
   ],
   "node": false,
   "browser": false,

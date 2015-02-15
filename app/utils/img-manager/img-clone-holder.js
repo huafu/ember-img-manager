@@ -44,6 +44,7 @@ function ImgCloneHolder() {
   this.attributeNames = [];
   this.src = null;
   this.node = null;
+  this.hooksHandled = [];
 }
 
 
@@ -75,6 +76,7 @@ function ImgCloneHolder() {
    * @method switchSrc
    * @param {string} newSrc
    * @param {HTMLImageElement} [original]
+   * @param {boolean} [force=false]
    * @chainable
    */
   proto.switchSrc = function (newSrc, original) {
@@ -103,8 +105,6 @@ function ImgCloneHolder() {
         this.attributeNames = attrNames;
       }
       imgFactory.free(this.src, oldImg);
-      //Ember.debug('[img-manager] Triggering action `change` on a clone holder.');
-      next(null, this.handler, 'change', newImg);
     }
     return this;
   };
@@ -126,6 +126,20 @@ function ImgCloneHolder() {
     this.handler = handler || Ember.K;
     this._defineAttributes(attributes);
     return this;
+  };
+
+  /**
+   * Call the handler only if it has not yet been triggered
+   *
+   * @method triggerOnce
+   * @param {string} event
+   * @param {string} realEvent
+   */
+  proto.triggerOnce = function (event, realEvent) {
+    if (this.hooksHandled.indexOf(event) === -1) {
+      this.hooksHandled.push(event);
+      next(null, this.handler, realEvent || event, this.node);
+    }
   };
 
   /**

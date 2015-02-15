@@ -10,6 +10,7 @@ Router.map(function() {
     this.route('simple');
     this.route('delayed-src');
     this.route('switch-src');
+    this.route('hooks');
   });
 });
 

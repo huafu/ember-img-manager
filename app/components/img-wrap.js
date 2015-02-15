@@ -252,12 +252,20 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
    */
   _cloneHolderActionHandler: computed(function () {
     return bind(this, function (action, imgNode) {
-      var imgSource;
+      var imgSource, event;
       if (action === 'change') {
         imgSource = this.get('imgSource');
         if (imgSource) {
           this._insertImgNode();
-          this.sendAction('load-' + (imgSource.get('isSuccess') ? 'success' : 'error' ), imgNode);
+          if (imgSource.get('isSuccess')) {
+            event = 'load-success';
+          }
+          else if (imgSource.get('isError')) {
+            event = 'load-error';
+          }
+          if (event) {
+            this.sendAction(event, imgNode);
+          }
         }
       }
     });

@@ -233,11 +233,28 @@ export default Ember.Object.extend(Ember.Evented, {
     if (!cloneHolder) {
       cloneHolder = new ImgCloneHolder();
     }
-    cloneHolder.useWith(this.get('virtualSrc'), attributes, original, handler);
     this.get('cloneHolders').push(cloneHolder);
     this.incrementProperty('hits');
+    cloneHolder.useWith(this.get('virtualSrc'), attributes, original, handler);
+    cloneHolder.triggerOnce(this.get('cloneHolderEvent'), 'change');
     return cloneHolder;
   },
+
+  /**
+   * The event reference when calling triggerOnce
+   * @property cloneHolderEvent
+   * @type {string}
+   */
+  cloneHolderEvent: computed('isSuccess', 'isError', function () {
+    if (this.get('isSuccess')) {
+      return 'success';
+    }
+    else if (this.get('isError')) {
+      return 'error';
+    }
+    return 'loading';
+  }),
+
 
   /**
    * Release a clone
@@ -269,16 +286,15 @@ export default Ember.Object.extend(Ember.Evented, {
    * @private
    */
   _switchClonesSrc: function () {
-    var opt, original, i, len;
-    opt = this.getProperties('cloneHolders', 'virtualSrc', 'manager', 'isSuccess', 'node');
+    var opt, original, i, len, event;
+    opt = this.getProperties('cloneHolders', 'virtualSrc', 'manager', 'isSuccess', 'node', 'isError');
     if (opt.isSuccess) {
       original = opt.node;
     }
-    if (this._oldVirtualSrc !== opt.virtualSrc) {
-      for (i = 0, len = opt.cloneHolders.length; i < len; i++) {
-        opt.cloneHolders[i].switchSrc(opt.virtualSrc, original);
-      }
-      this._oldVirtualSrc = opt.virtualSrc;
+    event = this.get('cloneHolderEvent');
+    for (i = 0, len = opt.cloneHolders.length; i < len; i++) {
+      opt.cloneHolders[i].switchSrc(opt.virtualSrc, original);
+      opt.cloneHolders[i].triggerOnce(event, 'change');
     }
   },
 
