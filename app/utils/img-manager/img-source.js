@@ -275,9 +275,9 @@ export default Ember.Object.extend(Ember.Evented, {
    *
    * @method switchClonesSrc
    */
-  switchClonesSrc: observer('virtualSrc', function () {
+  switchClonesSrc: on('ready', observer('virtualSrc', function () {
     next(this, '_switchClonesSrc');
-  }).on('ready'),
+  })),
 
   /**
    * Switch the clones' src
