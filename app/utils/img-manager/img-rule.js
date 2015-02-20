@@ -240,7 +240,7 @@ export default Ember.Object.extend({
    * @private
    */
   _loadQueue: computed(function () {
-    return [];
+    return Ember.A([]);
   }),
 
   /**
