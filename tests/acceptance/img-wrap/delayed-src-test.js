@@ -19,7 +19,7 @@ test('visiting /img-wrap/delayed-src', function () {
   visit('/img-wrap/delayed-src');
   andThen(function(){
     fillIn('#img-src', 'assets/images/cartoon-1.jpg');
-    later(10);
+    later(100);
   });
   andThen(function () {
     equal(currentPath(), 'img-wrap.delayed-src');
