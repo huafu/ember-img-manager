@@ -216,7 +216,13 @@ export default Ember.Object.extend({
     else {
       args = slice.call(arguments, 2);
     }
-    this.get('_loadQueue').pushObject([target, method, args]);
+    var loadQueue = this.get('_loadQueue');
+    if (args.indexOf('priority') === -1) {
+      loadQueue.pushObject([target, method, args]);
+    }
+    else {
+      loadQueue.unshiftObject([target, method, args]);
+    }
     this.processLoadQueue();
   },
 
