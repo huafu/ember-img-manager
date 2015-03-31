@@ -64,7 +64,9 @@ function ImgCloneHolder() {
       }
       this.attributeNames = [];
       imgFactory.free(this.src, this.node);
-      this.node = this.src = null;
+      this.node = null;
+      // force the use of a transparent pixel else the old image is shown
+      this.src = TRANSPARENT_PIXEL;
       this.handler = Ember.K;
     }
     return this;
