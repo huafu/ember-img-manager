@@ -17,13 +17,6 @@ var on = Ember.on;
 
 
 /**
- * @module img-manager/img-source
- * @class Current
- * @property {ImgSource} source
- * @property {ImgCloneHolder} cloneHolder
- */
-
-/**
  * @class ImgWrapComponent
  * @extends Ember.Component
  *
@@ -86,10 +79,7 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
       cloneHolder = imgSource.createClone(
         this.getProperties(IMG_ATTRIBUTES), this.get('_cloneHolderActionHandler')
       );
-      this.setProperties({
-        imgSource:   imgSource,
-        cloneHolder: cloneHolder
-      });
+      this.setProperties({imgSource: imgSource, cloneHolder: cloneHolder});
       this._insertImgNode();
     }
   },
@@ -105,10 +95,7 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
     if (cloneHolder) {
       this.get('imgSource').releaseClone(cloneHolder);
     }
-    this.setProperties({
-      cloneHolder: null,
-      imgSource:   null
-    });
+    this.setProperties({cloneHolder: null, imgSource: null});
   }),
 
   /**

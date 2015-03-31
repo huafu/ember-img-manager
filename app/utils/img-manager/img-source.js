@@ -9,7 +9,7 @@ var oneWay = computed.oneWay;
 var or = computed.or;
 var on = Ember.on;
 var bind = Ember.run.bind;
-var next = Ember.run.next;
+var schedule = Ember.run.schedule;
 
 
 var uuid = 0;
@@ -150,7 +150,7 @@ export default Ember.Object.extend(Ember.Evented, {
       }
       else {
         // do not even try to load the image, and directly fires the ready event
-        next(this, function () {
+        schedule('actions', this, function () {
           this.setProperties({isError: true, isLoading: false});
           this.trigger('ready');
         });
@@ -276,7 +276,7 @@ export default Ember.Object.extend(Ember.Evented, {
    * @method switchClonesSrc
    */
   switchClonesSrc: on('ready', observer('virtualSrc', function () {
-    next(this, '_switchClonesSrc');
+    schedule('actions', this, '_switchClonesSrc');
   })),
 
   /**
