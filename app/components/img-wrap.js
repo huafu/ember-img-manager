@@ -65,40 +65,6 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
   }),
 
   /**
-   * Update the src property and its dependencies
-   *
-   * @method _updateSrc
-   * @param {string} src
-   * @private
-   */
-  _updateSrc: function (src) {
-    var imgSource, cloneHolder;
-    this.releaseCloneHolder();
-    if (src) {
-      imgSource = this.manager.imgSourceForSrc(src);
-      cloneHolder = imgSource.createClone(
-        this.getProperties(IMG_ATTRIBUTES), this.get('_cloneHolderActionHandler')
-      );
-      this.setProperties({imgSource: imgSource, cloneHolder: cloneHolder});
-      this._insertImgNode();
-    }
-  },
-
-
-  /**
-   * Releases the clone holder
-   *
-   * @method releaseCloneHolder
-   */
-  releaseCloneHolder: on('destroy', function () {
-    var cloneHolder = this.get('cloneHolder');
-    if (cloneHolder) {
-      this.get('imgSource').releaseClone(cloneHolder);
-    }
-    this.setProperties({cloneHolder: null, imgSource: null});
-  }),
-
-  /**
    * Our image source
    * @property imgSource
    * @type {ImgSource}
@@ -192,12 +158,29 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
       else if (opt.isSuccess) {
         return this.get('successClass');
       }
-    }).readOnly(),
+    }
+  ).readOnly(),
+
+
+  /**
+   * Releases the clone holder
+   *
+   * @method _releaseCloneHolder
+   * @private
+   */
+  _releaseCloneHolder: on('willDestroyElement', function () {
+    var cloneHolder = this.get('cloneHolder');
+    if (cloneHolder) {
+      this.get('imgSource').releaseClone(cloneHolder);
+    }
+    this.setProperties({cloneHolder: null, imgSource: null});
+  }),
 
   /**
    * Inserts the clone in the element if this one is in the DOM
    *
    * @method _insertImgNode
+   * @private
    */
   _insertImgNode: on('didInsertElement', function () {
     var cloneHolder;
@@ -223,6 +206,7 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
    * Starts loading the source when the element enter the viewport
    *
    * @method _scheduleSourceLoad
+   * @private
    */
   _scheduleSourceLoad: on('didEnterViewport', function () {
     var imgSource = this.get('imgSource');
@@ -233,9 +217,30 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
   }),
 
   /**
+   * Update the src property and its dependencies
+   *
+   * @method _updateSrc
+   * @param {string} src
+   * @private
+   */
+  _updateSrc: function (src) {
+    var imgSource, cloneHolder;
+    this._releaseCloneHolder();
+    if (src) {
+      imgSource = this.manager.imgSourceForSrc(src);
+      cloneHolder = imgSource.createClone(
+        this.getProperties(IMG_ATTRIBUTES), this.get('_cloneHolderActionHandler')
+      );
+      this.setProperties({imgSource: imgSource, cloneHolder: cloneHolder});
+      this._insertImgNode();
+    }
+  },
+
+  /**
    * The handler called when the source is changed
    * @property _cloneHolderActionHandler
    * @type {Function}
+   * @private
    */
   _cloneHolderActionHandler: computed(function () {
     return bind(this, function (action, imgNode) {
