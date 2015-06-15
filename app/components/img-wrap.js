@@ -56,7 +56,9 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
    * @property style
    * @type {string}
    */
-  style: 'display: inline-block;',
+  style: function(){
+    return ('display: inline-block;').htmlSafe();
+  }.property(),
 
 
   /**
