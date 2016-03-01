@@ -1,4 +1,5 @@
 import Ember from 'ember';
+import { module, test } from 'qunit';
 import startApp from '../../helpers/start-app';
 import {TRANSPARENT_PIXEL} from 'dummy/utils/img-manager/img-clone-holder';
 import '../../helpers/later';
@@ -8,14 +9,14 @@ import '../../helpers/controller-for';
 var VALID_SRC = 'assets/images/cartoon-1.jpg';
 var INVALID_SRC = '__dummy_not_exists__.jpg';
 
-var application;
+var App;
 
 module('Acceptance: should trigger the `load-success` and `load-error` hooks', {
   setup:    function () {
-    application = startApp();
+    App = startApp();
   },
   teardown: function () {
-    Ember.run(application, 'destroy');
+    Ember.run(App, 'destroy');
   }
 });
 
