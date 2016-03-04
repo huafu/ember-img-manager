@@ -1,6 +1,8 @@
 import Ember from 'ember';
 import Application from '../../app';
 import config from '../../config/environment';
+import './later';
+import './controller-for';
 
 export default function startApp(attrs) {
   let application;

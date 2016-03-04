@@ -1,8 +1,7 @@
 import Ember from 'ember';
 import { module, test } from 'qunit';
 import startApp from '../../helpers/start-app';
-import {TRANSPARENT_PIXEL} from 'dummy/utils/img-manager/img-clone-holder';
-import '../../helpers/later';
+
 
 var App;
 
@@ -15,7 +14,7 @@ module('Acceptance: should update the image after the src changed with a delay',
   }
 });
 
-test('visiting /img-wrap/delayed-src', function (assert) {
+test('visiting /img-wrap/delayed-src', function () {
   var $imgContainer;
   visit('/img-wrap/delayed-src');
   andThen(function () {

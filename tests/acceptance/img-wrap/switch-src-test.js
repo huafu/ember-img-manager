@@ -1,16 +1,15 @@
 import Ember from 'ember';
+import { module, test } from 'qunit';
 import startApp from '../../helpers/start-app';
-import {TRANSPARENT_PIXEL} from 'dummy/utils/img-manager/img-clone-holder';
-import '../../helpers/later';
 
-var application;
+var App;
 
 module('Acceptance: should update the image after the src changed', {
   setup:    function () {
-    application = startApp();
+    App = startApp();
   },
   teardown: function () {
-    Ember.run(application, 'destroy');
+    Ember.run(App, 'destroy');
   }
 });
 

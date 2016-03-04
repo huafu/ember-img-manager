@@ -1,9 +1,6 @@
 import Ember from 'ember';
 import { module, test } from 'qunit';
 import startApp from '../../helpers/start-app';
-import {TRANSPARENT_PIXEL} from 'dummy/utils/img-manager/img-clone-holder';
-import '../../helpers/later';
-import '../../helpers/controller-for';
 
 
 var VALID_SRC = 'assets/images/cartoon-1.jpg';
@@ -24,7 +21,7 @@ test('visiting /img-wrap/hooks', function () {
   var $img1Container, $img2Container, $img3Container, controller;
   visit('/img-wrap/hooks');
   andThen(function(){
-    controller =controllerFor('img-wrap/hooks');
+    controller = controllerFor('img-wrap/hooks');
     $img1Container = find('.img-1');
     $img2Container = find('.img-2');
     $img3Container = find('.img-3');

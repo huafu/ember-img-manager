@@ -281,7 +281,7 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
 
 // now create the setters for each image attribute so that we can update them on each clone
 var extra = {};
-Ember.EnumerableUtils.forEach(IMG_ATTRIBUTES, function (name) {
+IMG_ATTRIBUTES.forEach(function (name) {
   extra[name] = computed({
     get: function() {
       return undefined;
