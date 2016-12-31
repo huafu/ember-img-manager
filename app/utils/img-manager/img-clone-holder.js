@@ -40,7 +40,7 @@ var setAttr = (function (hasSetAttr) {
  * @constructor
  */
 function ImgCloneHolder() {
-  this.handler = Ember.K;
+  this.handler = function() {};
   this.attributeNames = [];
   this.src = null;
   this.node = null;
@@ -65,7 +65,7 @@ function ImgCloneHolder() {
       this.attributeNames = [];
       imgFactory.free(this.src, this.node);
       this.node = this.src = null;
-      this.handler = Ember.K;
+      this.handler = function() {};
     }
     return this;
   };
@@ -123,7 +123,7 @@ function ImgCloneHolder() {
     assert('[img-manager] Clone already used for src `' + this.src + '`.', !this.src);
     this.src = src || TRANSPARENT_PIXEL;
     this.node = imgFactory.forSrc(this.src, original);
-    this.handler = handler || Ember.K;
+    this.handler = handler || function() {};
     this._defineAttributes(attributes);
     return this;
   };
