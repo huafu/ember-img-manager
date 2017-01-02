@@ -30,8 +30,11 @@ export default Ember.Mixin.create(Ember.Evented, {
    * @property enteredViewport
    * @type {boolean}
    */
-  enteredViewport: computed(function (key, value, oldValue) {
-    if (arguments.length > 1) {
+  enteredViewport: computed({
+    get: function() {
+      return false;
+    },
+    set: function (key, value, oldValue) {
       if (value) {
         this._unbindScroll();
         if (!oldValue) {
@@ -39,11 +42,8 @@ export default Ember.Mixin.create(Ember.Evented, {
           next(this, 'trigger', 'didEnterViewport');
         }
       }
+      return value;
     }
-    else {
-      value = false;
-    }
-    return value;
   }),
 
   /**

@@ -17,9 +17,16 @@ export default Ember.Controller.extend({
   }),
 
   hooked: function (type, id) {
-    return this.get('hooks').find(function (hooked) {
-      return (!type || hooked.type === type) && (!id || hooked.id === id);
-    });
+    // hooks.find resulted in an error so using for loop instead:
+    // TypeError: undefined is not a constructor (evaluating 'tmp.find(filter)')
+    
+    var hooks = this.get('hooks');
+    for (var i = 0; i < hooks.length; i++) { 
+      var hooked = hooks[i];
+      if ((!type || hooked.type === type) && (!id || hooked.id === id)) {
+        return hooked;
+      }
+    }
   },
 
   hookeds: function (type, id) {

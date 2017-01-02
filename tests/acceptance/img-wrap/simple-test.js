@@ -1,7 +1,5 @@
 import Ember from 'ember';
 import startApp from '../../helpers/start-app';
-import {TRANSPARENT_PIXEL} from 'dummy/utils/img-manager/img-clone-holder';
-import '../../helpers/later';
 
 var application;
 
