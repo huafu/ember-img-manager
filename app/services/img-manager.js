@@ -5,6 +5,7 @@ import ENV from '../config/environment';
 import SimpleMap from '../utils/img-manager/simple-map';
 
 
+var map = Ember.EnumerableUtils.map;
 var computed = Ember.computed;
 var readOnly = computed.readOnly;
 var bind = Ember.run.bind;
@@ -12,9 +13,9 @@ var bind = Ember.run.bind;
 /**
  * @module img-manager
  * @class ImgManagerService
- * @extends Ember.Service
+ * @extends Ember.Object
  */
-export default Ember.Service.extend({
+export default Ember.Object.extend({
   /**
    * Our configuration
    * @property config
@@ -124,8 +125,7 @@ export default Ember.Service.extend({
    */
   rules: computed(function () {
     var _this = this;
-    var rulesArray = this.get('config.rules') || [];
-    var rules = Ember.A(rulesArray.map(function (ruleConfig) {
+    var rules = Ember.A(map(this.get('config.rules') || [], function (ruleConfig) {
       return ImgRule.create({
         manager: _this,
         config:  ruleConfig

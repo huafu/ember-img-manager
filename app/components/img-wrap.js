@@ -56,9 +56,7 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
    * @property style
    * @type {string}
    */
-  style: Ember.computed(function() {
-    return Ember.String.htmlSafe('display: inline-block;');
-  }),
+  style: 'display: inline-block;',
 
 
   /**
@@ -66,16 +64,11 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
    * @property src
    * @type {string}
    */
-  src: computed( {
-    get: function() {
-      return undefined;
-    },
-    set: function (key, value, oldValue) {
-      if (value !== oldValue) {
-        once(this, '_updateSrc', value);
-      }
-      return value;
+  src: computed(function (key, value, oldValue) {
+    if (arguments.length > 1 && value !== oldValue) {
+      once(this, '_updateSrc', value);
     }
+    return value;
   }),
 
   /**
@@ -281,22 +274,16 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
 
 // now create the setters for each image attribute so that we can update them on each clone
 var extra = {};
-IMG_ATTRIBUTES.forEach(function (name) {
-  extra[name] = computed({
-    get: function() {
-      return undefined;
-    },
-    set: function(key, value) {
-      var current;
-      if (!this.isDestroying && !this.isDestroyed && this._state === 'inDOM') {
-        current = this.get('cloneHolder');
-        //current.cloneHolder.clone was undefined
-        if (current && current.cloneHolder) {
-          current.cloneHolder.setAttribute(name, value);
-        }
+Ember.EnumerableUtils.forEach(IMG_ATTRIBUTES, function (name) {
+  extra[name] = computed(function (key, value) {
+    var current;
+    if (arguments.length > 1 && !this.isDestroying && !this.isDestroyed && this._state === 'inDOM') {
+      current = this.get('cloneHolder');
+      if (current && current.cloneHolder.clone) {
+        current.cloneHolder.setAttribute(name, value);
       }
-      return value;
     }
+    return value;
   });
 });
 ImgWrapComponent.reopen(extra);

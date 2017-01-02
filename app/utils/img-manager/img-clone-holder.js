@@ -3,7 +3,10 @@ import Ember from 'ember';
 import imgFactory from './img-node-factory';
 
 
+var EnumerableUtils = Ember.EnumerableUtils;
 var assert = Ember.assert;
+var forEach = EnumerableUtils.forEach;
+var filter = EnumerableUtils.filter;
 var hasOwn = {}.hasOwnProperty;
 var run = Ember.run;
 var next = run.next;
@@ -87,7 +90,7 @@ function ImgCloneHolder() {
       this.node = newImg = imgFactory.forSrc(newSrc, original);
       hasChanged = false;
       attrNames = [];
-      this.attributeNames.forEach(function (name) {
+      forEach(this.attributeNames, function (name) {
         var attr = oldImg.getAttributeNode(name);
         if (attr) {
           attr = oldImg.removeAttributeNode(attr);
@@ -198,7 +201,7 @@ function ImgCloneHolder() {
     var node, attrNames;
     node = this.node;
     attrNames = this.attributeNames;
-    clone.node.attributes.forEach(function (attr) {
+    forEach(clone.node.attributes, function (attr) {
       if (clone.attributeNames.indexOf(attr.localName) !== -1) {
         attr = clone.node.removeAttributeNode(attr);
         node.setAttributeNode(attr);
@@ -206,7 +209,7 @@ function ImgCloneHolder() {
       }
     });
     // remove the names from the index
-    clone.attributeNames = clone.attributeNames.filter(function (name) {
+    clone.attributeNames = filter(clone.attributeNames, function (name) {
       return attrNames.indexOf(name) !== -1;
     });
   };

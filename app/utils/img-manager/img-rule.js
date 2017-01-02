@@ -123,17 +123,18 @@ export default Ember.Object.extend({
    * @property loadQueuePausedCount
    * @type {number}
    */
-  loadQueuePausedCount: computed({
-    get: function() {
-      // initial get
-      return 0;
-    },
-    set: function (key, value) {
+  loadQueuePausedCount: computed(function (key, value) {
+    if (arguments.length > 1) {
+      // set
       if (value === 0) {
         // time to schedule the queue processing
         next(this, 'processLoadQueue');
       }
       return value;
+    }
+    else {
+      // initial get
+      return 0;
     }
   }),
 
