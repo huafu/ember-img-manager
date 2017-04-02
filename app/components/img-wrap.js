@@ -4,7 +4,7 @@ import ImgManagerInViewportMixin from '../mixins/img-manager/in-viewport';
 var IMG_ATTRIBUTES = [
   'id', 'title', 'align', 'alt', 'border', 'height',
   'hspace', 'ismap', 'longdesc', 'name', 'width',
-  'usemap', 'vspace'
+  'usemap', 'vspace', 'priority'
 ];
 
 var computed = Ember.computed;
@@ -248,7 +248,11 @@ ImgWrapComponent = Ember.Component.extend(ImgManagerInViewportMixin, {
     var imgSource = this.get('imgSource');
     if (imgSource && this._state === 'inDOM' && this.get('enteredViewport')) {
       //Ember.debug('[img-manager] Scheduling load for `' + imgSource.get('src') + '`.');
-      imgSource.scheduleLoad();
+      if (this.get('priority') === true) {
+        imgSource.scheduleLoad(false, 'priority');
+      } else {
+        imgSource.scheduleLoad();
+      }
     }
   }),
 

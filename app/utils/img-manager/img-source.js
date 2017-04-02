@@ -369,13 +369,13 @@ export default Ember.Object.extend(Ember.Evented, {
    * @param {boolean} [forceReload=false]
    * @private
    */
-  scheduleLoad: function (forceReload) {
+  scheduleLoad: function (forceReload, priority) {
     var initiated = this.get('isInitiated');
     if (initiated && forceReload) {
       this.set('isInitiated', initiated = false);
     }
     if (!initiated) {
-      this.get('rule').scheduleForLoad(this, 'load');
+      this.get('rule').scheduleForLoad(this, 'load', priority);
     }
   },
 
