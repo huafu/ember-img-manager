@@ -3,22 +3,22 @@ import { module, test } from 'qunit';
 import startApp from '../../helpers/start-app';
 
 
-var VALID_SRC = 'assets/images/cartoon-1.jpg';
-var INVALID_SRC = '__dummy_not_exists__.jpg';
+let VALID_SRC = 'assets/images/cartoon-1.jpg';
+let INVALID_SRC = '__dummy_not_exists__.jpg';
 
-var App;
+let App;
 
 module('Acceptance: should trigger the `load-success` and `load-error` hooks', {
-  setup:    function () {
+  beforeEach:    function () {
     App = startApp();
   },
-  teardown: function () {
+  afterEach: function () {
     Ember.run(App, 'destroy');
   }
 });
 
-test('visiting /img-wrap/hooks', function () {
-  var $img1Container, $img2Container, $img3Container, controller;
+test('visiting /img-wrap/hooks', function (assert) {
+  let $img1Container, $img2Container, $img3Container, controller;
   visit('/img-wrap/hooks');
   andThen(function(){
     controller = controllerFor('img-wrap/hooks');
@@ -28,7 +28,7 @@ test('visiting /img-wrap/hooks', function () {
     later(50);
   });
   andThen(function(){
-    ok(!controller.hooked(), 'No hook should have been called yet');
+    assert.ok(!controller.hooked(), 'No hook should have been called yet');
     controller.setProperties({
       imgSrc1: VALID_SRC,
       imgSrc2: VALID_SRC,
@@ -37,10 +37,10 @@ test('visiting /img-wrap/hooks', function () {
     later(50);
   });
   andThen(function () {
-    ok(controller.hooked('success', 1), 'Success should have been called for img 1');
-    ok(controller.hooked('success', 2), 'Success should have been called for img 2');
-    ok(controller.hooked('success', 3), 'Success should have been called for img 3');
-    equal(controller.hookeds().length, 3, 'Only 3 hooks should have been called');
+    assert.ok(controller.hooked('success', 1), 'Success should have been called for img 1');
+    assert.ok(controller.hooked('success', 2), 'Success should have been called for img 2');
+    assert.ok(controller.hooked('success', 3), 'Success should have been called for img 3');
+    assert.equal(controller.hookeds().length, 3, 'Only 3 hooks should have been called');
     controller.resetHooks();
     controller.setProperties({
       imgSrc1: INVALID_SRC,
@@ -50,10 +50,10 @@ test('visiting /img-wrap/hooks', function () {
     later(50);
   });
   andThen(function () {
-    ok(controller.hooked('error', 1), 'Error should have been called for img 1');
-    ok(controller.hooked('error', 2), 'Error should have been called for img 2');
-    ok(controller.hooked('error', 3), 'Error should have been called for img 3');
-    equal(controller.hookeds().length, 3, 'Only 3 hooks should have been called');
+    assert.ok(controller.hooked('error', 1), 'Error should have been called for img 1');
+    assert.ok(controller.hooked('error', 2), 'Error should have been called for img 2');
+    assert.ok(controller.hooked('error', 3), 'Error should have been called for img 3');
+    assert.equal(controller.hookeds().length, 3, 'Only 3 hooks should have been called');
     controller.resetHooks();
   });
 });
